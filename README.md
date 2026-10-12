@@ -30,23 +30,33 @@ Después de editar, ejecuta `python3 build.py` para regenerar `index.html` y los
 
 ### Generación del informe
 
-`DC.buildReport(respuestas)` en `src/report.js` devuelve un objeto con las seis secciones. La interfaz solo lo pinta. Para ampliarlo (por ejemplo, con un modelo de lenguaje) basta con sustituir o complementar esa función manteniendo la misma forma del objeto.
+`DC.buildReport(respuestas)` en `src/report.js` devuelve el informe de la situación explorada (y un resumen de la anterior si se exploró una segunda), las situaciones pendientes y el comentario final. La interfaz solo lo pinta. Para ampliarlo (por ejemplo, con un modelo de lenguaje) basta con sustituir o complementar esa función manteniendo la forma del objeto.
 
-Reglas principales (ver `decide()`):
+Estados posibles: «Hay información suficiente para proponer una primera prueba», «Hay una oportunidad plausible, pero faltan detalles», «No tenemos información suficiente», «La solución actual parece adecuada», «No se ha identificado una necesidad relevante en lo explorado». Ninguna conclusión se presenta como global: el informe indica que se refiere solo a lo explorado.
 
-1. Método actual que funciona y sin consecuencias relevantes → no se propone nada.
-2. Sin consecuencias relevantes → no se propone nada, aunque la situación sea frecuente.
-3. Prefiere continuar como ahora → no se propone herramienta.
-4. Tarea y obstáculo sin concretar → pedir más información.
-5. Falta de tiempo, recursos o energía → cambio de proceso; solo contribución tecnológica limitada si otras respuestas la respaldan.
-6. Depende de otras personas → registro compartido limitado (coordinación) o cambio de proceso.
-7. Resto → propuesta del catálogo; formato según método actual, condiciones de uso y mantenimiento. Las integraciones siempre quedan como pendientes de comprobar.
+Reglas principales (`decide()`):
 
-### Contradicciones detectadas (aclaración opcional antes del informe)
+1. Método actual que funciona y sin consecuencias relevantes → «La solución actual parece adecuada».
+2. Sin consecuencias relevantes → sin propuesta, aunque la situación sea frecuente.
+3. Prefiere continuar como ahora → sin herramienta.
+4. Tarea y obstáculo sin concretar → falta información.
+5. Falta de energía o ganas → según el seguimiento: tarea demasiado grande (pasos claros), varias cosas (criterios de prioridad), siguiente paso poco claro (instrucciones concretas). Sin energía o sin interés, sin más datos → «No tenemos información suficiente para proponer una ayuda tecnológica para esta dificultad».
+6. Falta de tiempo o recursos → cambio en la forma de hacerlo; contribución limitada solo si otras respuestas la respaldan.
+7. Depende de otras personas → registro compartido limitado o cambio en la forma de hacerlo.
+8. Resto → propuesta del catálogo. El acceso a materiales e integraciones queda siempre pendiente de comprobar.
 
-- Método «funciona bien» + suele posponerla o provoca errores, plazos perdidos o impide una actividad.
-- La situación se marcó con consecuencias en la pregunta 3, pero luego «Ninguna relevante».
-- «Prefiero continuar como ahora» + consecuencias como errores, gasto, plazos perdidos o actividad impedida.
+### Rutas
+
+- 8 situaciones de frecuencia (incluye recordar pendientes y elegir por dónde empezar por separado, y aprendizaje).
+- Selección: si hay varias → qué explorar → si no hay preferencia, cuál tuvo más consecuencias → si tampoco, se propone la más frecuente como criterio provisional.
+- Antes del informe: «¿La situación explorada representa lo que más te interesaría facilitar?». Si no, se puede explorar otra **una sola vez** sin repetir las preguntas generales (contexto, frecuencias, dificultades, condiciones de uso).
+- Comentario final: si hay texto, se pregunta si describe la misma situación u otra, y qué incluye (dificultad, idea de solución). Si es otra, se clasifica con las categorías del cuestionario y se puede explorar (si queda la exploración adicional) o dejar como «Información adicional pendiente de explorar». El texto nunca se interpreta automáticamente.
+
+### Contradicciones detectadas (aclaración opcional)
+
+- Método «funciona bien» + suele posponerla o provoca errores, plazos perdidos o actividades sin hacer.
+- La situación se marcó como dificultad en la pregunta de dificultades, pero luego «Ninguna relevante».
+- «Prefiero continuar como ahora» + errores, gasto, plazos perdidos o actividades sin hacer.
 
 ## Pruebas
 
@@ -55,12 +65,12 @@ pip install playwright && python3 -m playwright install chromium
 python3 build.py && python3 tests/test_rutas.py
 ```
 
-Cubren: varias dificultades, empate de frecuencia, una sola dificultad, ruta sin dificultades con actividad deseada, ruta sin necesidad, sin consecuencias, método actual satisfactorio, obstáculo que el software no resuelve, «Otra» sin texto, cambios de respuesta y limpieza de ramificaciones, máximos y opciones excluyentes, móvil (375 px), teclado, descarga, impresión y escapado de texto libre.
+Cubren: selección con varias dificultades (preferencia, consecuencias, frecuencia provisional y empate), aprendizaje, el caso de prueba de la estudiante (comentario pendiente y comentario explorado), energía con y sin descarte, método satisfactorio, ausencia de necesidad (con y sin comentario), «Otra» sin texto, cambio de situación y limpieza de respuestas, opciones excluyentes e incompatibles, máximos, ayuda lateral en ordenador y debajo en móvil, teclado, descarga, impresión y frases prohibidas.
 
 Estas pruebas comprueban que la lógica funciona; **no** sustituyen la prueba con usuarios.
 
 ## Limitaciones conocidas
 
 - Dentro de la vista de artifact de claude.ai no se puede abrir el diálogo de impresión: la app lo explica y remite a descargar el informe, que incluye su propio botón de imprimir / guardar como PDF.
-- La duración de 5–10 minutos es un objetivo sin medir.
+- La duración de unos 10 minutos es un objetivo sin medir. Una ruta típica tiene 23–25 pantallas (8 de ellas de frecuencia, de un clic).
 - El catálogo de propuestas es limitado y conservador por diseño.
