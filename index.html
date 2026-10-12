@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cuestionario Dinerocorp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap">
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<a class="skip" href="#app">Saltar al contenido</a>
+<div class="wrap">
+  <header class="top" id="top">
+    <div class="brandrow">
+      <span class="brand">Dinerocorp</span>
+      <span class="brand-tag">Cuestionario exploratorio</span>
+    </div>
+    <div class="progress" id="progress" hidden>
+      <span class="progress-text" id="progress-text"></span>
+      <div class="bar" role="progressbar" id="progress-bar" aria-labelledby="progress-text" aria-valuemin="0" aria-valuemax="100"><span id="progress-fill"></span></div>
+    </div>
+  </header>
+  <main id="app" tabindex="-1"></main>
+  <div class="live" id="live" aria-live="polite" role="status"></div>
+</div>
+<noscript><p style="padding:16px">Este cuestionario necesita JavaScript activado.</p></noscript>
+
+<script src="src/questions.js"></script>
+<script src="src/flow.js"></script>
+<script src="src/report.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
