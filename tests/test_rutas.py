@@ -184,6 +184,8 @@ def ruta_estudiante(q, explorar):
     q.answer('Pierdo un plazo o una oportunidad', 'Dejo sin hacer algo que me importa')
     q.answer('Vídeos o grabaciones de audio')
     q.answer('Ser gratuita o de coste bajo', 'Requerir poca configuración', 'Funcionar desde el ordenador')
+    check(tag + ': pregunta qué acabó haciendo (sin otro seguimiento más útil)', 'qué acabaste haciendo' in q.title(), q.title())
+    q.answer('Hice otra actividad')
     q.answer('Sí')
     q.p.fill('textarea', 'Estudio con clases grabadas, son mi único material de estudio. Me gustaría sacar apuntes automáticamente.')
     q.cont()
@@ -276,6 +278,7 @@ def ruta_metodo_ok(q):
     q.answer('La información estaba dispersa o era difícil de encontrar')
     q.answer('Utilizo una aplicación o web')
     q.pick('Me funciona bien y requiere poco esfuerzo', 'Sí, y me ha servido'); q.cont()
+    q.pick('Cambiar el momento o las condiciones', 'No, ahora me funciona suficientemente bien'); q.cont()
     q.answer('Ninguna relevante')
     q.answer('Una aplicación o plataforma')
     q.answer('En una plataforma o aplicación a la que entro con mi cuenta')
@@ -430,6 +433,117 @@ def ruta_cambios(q):
     check('Progreso: indicador textual', re.match(r'Pantalla \d+ de ', p.inner_text('#progress-text')) is not None, p.inner_text('#progress-text'))
 
 
+def universitaria(q, completa, describe=False):
+    tag = 'Universitaria (' + ('completa' if completa else 'datos pendientes') + (', describe consecuencia' if describe else '') + ')'
+    seen = []
+    def ans(*t):
+        seen.append(q.title()); q.answer(*t)
+    q.start()
+    ans('Estudios o formación')
+    for s_ in SIT_ORDER:
+        ans({'C': 'En 6 días o más', 'F': 'En 1–2 días'}.get(s_, NUNCA))
+    ans(SHORT['F'])
+    check(tag + ': respeta la situación elegida aunque otra sea más frecuente', 'ámbito' in q.title(), q.title())
+    ans('Estudios o formación')
+    ans('Aprender o practicar algo')
+    check(tag + ': concreta la actividad de aprendizaje', q.title() == '¿Qué estabas intentando hacer?', q.title())
+    hx = q.p.inner_text('.qhelp')
+    check(tag + ': ejemplos de aprendizaje académico, laboral y personal', 'curso' in hx and 'trabajo' in hx and 'idioma' in hx, hx)
+    ans('Comprender una explicación' if completa else 'No lo sé')
+    ans('En ese momento me faltaban energía o ganas para hacerlo')
+    ans('No lo sé')
+    ans('Utilizo notas, papel, documentos o una hoja de cálculo')
+    q.pick('Depende de la ocasión', 'Sí, y me ha servido'); q.cont()
+    check(tag + ': pregunta qué le ayudó', 'te ayudó' in q.title() and 'queda algo' in q.text(), q.title())
+    if completa:
+        q.pick('Cambiar cómo organizo o divido la tarea', 'Solo en algunas ocasiones')
+        q.p.fill('#txt-1_q9c-detalle', 'Dividir en bloques de 20 minutos')
+        q.cont()
+        check(tag + ': identifica lo que queda con opciones de la ruta', 'facilitar todavía' in q.title(), q.title())
+        ans('Aprender o practicar algo')
+    else:
+        q.pick('Cambiar cómo organizo o divido la tarea')
+        q.pick('No lo recuerdo')
+        check(tag + ': «No lo recuerdo» es excluyente', not q.inp('Cambiar cómo organizo o divido la tarea').is_checked(), '')
+        q.pick('No lo sé'); q.cont()
+    ans('Ninguna relevante')
+    ans('Papel')
+    q.pick('Adaptarse a mis necesidades de accesibilidad', 'Funcionar desde el ordenador'); q.cont()
+    check(tag + ': seguimiento voluntario de accesibilidad', 'cómodamente' in q.title() and '(opcional)' in q.text(), q.title())
+    if completa:
+        q.pick('Leer con mayor facilidad')
+    else:
+        q.pick('Leer con mayor facilidad'); q.pick('Prefiero no especificarlo')
+        check(tag + ': «Prefiero no especificarlo» es excluyente', not q.inp('Leer con mayor facilidad').is_checked(), '')
+    q.cont()
+    check(tag + ': comprobación de consecuencias', 'aclaración' in q.title(), q.title())
+    q.pick('Sí tiene consecuencias, pero no encajaban en la lista'); q.cont()
+    check(tag + ': pregunta en qué nota la consecuencia (opcional)', 'En qué notas esa consecuencia' in q.title(), q.title())
+    if describe:
+        q.p.fill('textarea', 'Llego con retraso a las entregas')
+    q.cont()
+    check(tag + ': no pregunta qué acabó haciendo (hay seguimientos más útiles)', 'qué acabaste haciendo' not in q.title(), q.title())
+    ans('Sí')
+    q.cont()
+    t = report_checks(q, tag)
+    seen_q7b = sum(1 for x in seen if 'describe mejor' in x)
+    check(tag + ': las causas de energía se preguntan una sola vez', seen_q7b == 1, seen)
+    check(tag + ': el informe no vuelve a pedir elegir causas', 'demasiado grande' not in q.p.inner_text('.ask'), q.p.inner_text('.ask'))
+    if describe:
+        check(tag + ': usa la consecuencia descrita', 'Llego con retraso a las entregas' in t, '')
+    else:
+        check(tag + ': reconoce consecuencias sin describir', 'Has indicado que esta situación tiene consecuencias relevantes, pero todavía no sabemos cuáles.' in t, t[:1500])
+        check(tag + ': estado de necesidad por describir', 'Hay una necesidad, pero todavía no está bien descrita' in t, '')
+    check(tag + ': no muestra «Ninguna relevante» como conclusión', 'Ninguna relevante' not in t, '')
+    check(tag + ': no recomienda una aplicación', 'Una aplicación' not in t and 'Una web sencilla' not in t and q.p.locator('.features li').count() == 0, '')
+    check(tag + ': mantiene la mejora que funciona', 'Mantén' in t and 'te ha servido' in t, '')
+    check(tag + ': no se desvía a coordinación', SHORT['C'] not in t, '')
+    check(tag + ': no atribuye el problema a la etapa universitaria', not re.search(r'universi|carrera', t, re.I), '')
+    if completa:
+        check(tag + ': accesibilidad como condición de la ayuda', 'Accesibilidad: permitirte leer con mayor facilidad' in t, '')
+        check(tag + ': registra lo que ayudó y lo que queda', 'cambiar cómo organizo o divido la tarea' in t and 'Dividir en bloques' in t and 'Aún queda algo por facilitar en algunas ocasiones' in t, '')
+    else:
+        check(tag + ': accesibilidad sin concretar', 'La ayuda tendría que adaptarse a tus necesidades de accesibilidad; falta concretar qué ajustes necesitas.' in t, '')
+        check(tag + ': reconoce datos pendientes sin inventarlos', 'Qué fue exactamente lo que te ayudó' in t and 'Qué queda por facilitar' in t, '')
+        check(tag + ': no repite «¿Qué estabas intentando hacer?»', '¿Qué estabas intentando hacer?' not in q.p.inner_text('.ask'), '')
+    html = q.p.evaluate('DC_APP.exportHTML()')
+    check(tag + ': exportación con respuesta inicial y aclaración', 'Respuesta inicial: Ninguna relevante. Aclaración posterior: Sí tiene consecuencias, pero no encajaban en la lista' in html, '')
+    return q
+
+
+def mejora_suficiente(q):
+    q.start()
+    q.answer('Hogar o cuidados')
+    q.freq(B='En 3–5 días')
+    q.answer(SHORT['B'])
+    q.answer('Hogar o cuidados')
+    q.answer('Introducir los mismos datos en varios sitios')
+    q.answer('Había demasiados pasos manuales o repetidos')
+    q.answer('Utilizo notas, papel, documentos o una hoja de cálculo')
+    q.pick('Lo consigo, pero con más esfuerzo del que quisiera', 'Sí, y me ha servido'); q.cont()
+    q.pick('Utilizar una herramienta o un material', 'No, ahora me funciona suficientemente bien'); q.cont()
+    q.answer('Me cansa o me frustra')
+    q.answer('Papel')
+    q.answer('Funcionar desde el móvil')
+    q.answer('Sí'); q.cont()
+    t = report_checks(q, 'Mejora suficiente')
+    check('Mejora suficiente: termina sin nueva herramienta', 'La solución actual parece adecuada' in t and 'Mantener lo que ya te funciona' in t and q.p.locator('.features li').count() == 0, t)
+    q.p.click('[data-act=review]')
+    q.p.click('[data-goto="1.q9"]')
+    q.pick('No'); q.cont()
+    keys = q.keys()
+    check('Limpieza: cambiar «me ha servido» quita solo sus seguimientos', '1.q9c' not in keys and '1.q9d' not in keys and '1.q10b' in keys and '1.q11' in keys, keys)
+
+
+def limpieza_aclaraciones(q):
+    universitaria(q, True)
+    q.p.click('[data-act=review]')
+    q.p.click('[data-goto="q12"]')
+    q.inp('Adaptarse a mis necesidades de accesibilidad').uncheck(); q.cont()
+    keys = q.keys()
+    check('Limpieza: quitar accesibilidad elimina su seguimiento', 'qacc' not in keys and '1.qc' in keys, keys)
+
+
 def layout(browser):
     p = browser.new_page(viewport={'width': 1280, 'height': 900})
     q = Q(p); q.start(); q.answer('Estudios o formación')
@@ -497,10 +611,13 @@ def main():
     page_tests = [ruta_varias, ruta_consecuencias, ruta_empate, ruta_aprendizaje,
                   lambda q: ruta_estudiante(q, False), lambda q: ruta_estudiante(q, True),
                   ruta_energia_grande, ruta_energia_sin, ruta_metodo_ok, ruta_sin_necesidad,
-                  ruta_sin_necesidad_comentario, ruta_otra_vacia, ruta_cambio_situacion, ruta_cambios]
+                  ruta_sin_necesidad_comentario, ruta_otra_vacia, ruta_cambio_situacion, ruta_cambios,
+                  lambda q: universitaria(q, True), lambda q: universitaria(q, False), lambda q: universitaria(q, False, True),
+                  mejora_suficiente, limpieza_aclaraciones]
     names = ['varias', 'consecuencias', 'empate', 'aprendizaje', 'estudiante-pendiente', 'estudiante-explora',
              'energía-grande', 'energía-sin', 'método-ok', 'sin-necesidad', 'sin-necesidad-comentario', 'otra-vacía',
-             'cambio-situación', 'cambios']
+             'cambio-situación', 'cambios', 'universitaria-completa', 'universitaria-pendiente', 'universitaria-describe',
+             'mejora-suficiente', 'limpieza-aclaraciones']
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         for name, fn in zip(names, page_tests):

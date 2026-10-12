@@ -27,9 +27,10 @@ window.DC = window.DC || {};
     plausible: 'Hay una oportunidad plausible, pero faltan detalles',
     insuficiente: 'No tenemos información suficiente',
     actual: 'La solución actual parece adecuada',
-    norelevante: 'No se ha identificado una necesidad relevante en lo explorado'
+    norelevante: 'No se ha identificado una necesidad relevante en lo explorado',
+    sindescribir: 'Hay una necesidad, pero todavía no está bien descrita'
   };
-  var SYMBOL = { ok: 'Lista para probar', plausible: 'Plausible', insuficiente: 'Faltan datos', actual: 'Adecuada', norelevante: 'Sin necesidad' };
+  var SYMBOL = { ok: 'Lista para probar', plausible: 'Plausible', insuficiente: 'Faltan datos', actual: 'Adecuada', norelevante: 'Sin necesidad', sindescribir: 'Por describir' };
 
   var FORMATS = {
     feature: 'Una funcionalidad dentro de una herramienta que ya usas',
@@ -38,7 +39,9 @@ window.DC = window.DC || {};
     process: 'Un cambio en la forma de hacerlo',
     existing: 'Explorar primero una herramienta existente',
     moreinfo: 'Obtener más información antes de proponer algo',
-    none: 'Ninguna intervención por ahora'
+    none: 'Ninguna intervención por ahora',
+    keep: 'Mantener lo que ya te funciona',
+    complement: 'Mantener lo que te funciona y complementarlo solo si hace falta'
   };
 
   /* f: [texto, motivo]  → motivo: task | obstacle | data | review | effort | measure */
@@ -161,31 +164,56 @@ window.DC = window.DC || {};
   function lc(s) { return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
   function quote(s) { return '«' + s + '»'; }
 
-  /* ---------- Señales de una situación explorada ---------- */
+  /* ---------- Señales de una situación explorada ----------
+     Las aclaraciones posteriores (qc, qconsec) prevalecen sobre la
+     respuesta inicial para la interpretación vigente; la respuesta
+     inicial se conserva en el historial y en la exportación. */
   function signals(a, d, n) {
     var K = function (b) { return DC.K(n, b); };
     var r = DC.routeObj(d, n);
     var s = { n: n, r: r, K: K };
     s.situation = r.situation;
     s.task = val(a, K('q6'));
-    s.taskVague = (s.task === 'otra' && !DC.text(a, K('q6'), 'otra')) || s.task === 'nolose';
+    s.learn = val(a, K('q6b'));
+    s.taskVague = (s.task === 'otra' && !DC.text(a, K('q6'), 'otra')) || s.task === 'nolose' ||
+      s.learn === 'nolose' || (s.learn === 'otra' && !DC.text(a, K('q6b'), 'otra'));
     s.obstacle = val(a, K('q7'));
     s.obstacleVague = s.obstacle === 'nolose' || (s.obstacle === 'otro' && !DC.text(a, K('q7'), 'otro'));
     s.energy = s.obstacle === 'energia' ? val(a, K('q7b')) : null;
     s.energyAmbiguous = s.obstacle === 'energia' && ['otra', 'nolose'].indexOf(s.energy) !== -1;
+    s.energyBehavior = val(a, K('q7c'));
+    s.energySkipped = s.energyAmbiguous && !s.energyBehavior;
 
     var c1 = DC.clarification(a, n, 'c_metodo'), c2 = DC.clarification(a, n, 'c_consecuencia'), c3 = DC.clarification(a, n, 'c_cambio');
     s.unresolved = DC.contradictions(a, d, n).filter(function (c) { var v = DC.clarification(a, n, c.id); return !v || v === 'nodecir'; });
-    if (c2 === 'relevante') s.relevant = true;
-    else if (c2 === 'norelevante') s.relevant = false;
-    else if (hasAny(a, K('q10b'), RELEVANT)) s.relevant = true;
-    else if (has(a, K('q10b'), 'ninguna')) s.relevant = false;
-    else s.relevant = null;
+    s.consText = val(a, K('qconsec')) || '';
+    var consContradiction = DC.contradictions(a, d, n).some(function (c) { return c.id === 'c_consecuencia'; });
+    if (c2 === 'relevante') { s.consState = s.consText ? 'identificadas' : 'sindescribir'; s.relevant = true; s.consClarified = true; }
+    else if (c2 === 'norelevante') { s.consState = 'ninguna'; s.relevant = false; }
+    else if (hasAny(a, K('q10b'), RELEVANT)) { s.consState = 'identificadas'; s.relevant = true; }
+    else if (has(a, K('q10b'), 'ninguna')) {
+      if (consContradiction) { s.consState = 'noseguro'; s.relevant = null; }
+      else { s.consState = 'ninguna'; s.relevant = false; }
+    } else { s.consState = 'noseguro'; s.relevant = null; }
+
     s.strong = hasAny(a, K('q10b'), STRONG);
     s.works = val(a, K('q9')) === 'bien' && c1 !== 'parcial';
     s.notTried = has(a, K('q8'), 'nointentado');
     s.keepAsIs = has(a, 'q12', 'continuar') && c3 !== 'abierto';
     s.usesApp = has(a, K('q8'), 'app');
+
+    s.improved = val(a, K('q9b')) === 'sirve';
+    s.helped = val(a, K('q9c')) || [];
+    s.helpedUnknown = s.improved && (!s.helped.length || s.helped.indexOf('norecuerdo') !== -1);
+    var rem = val(a, K('q9d'));
+    s.remaining = !s.improved ? null : rem === 'si' || rem === 'ocasiones' ? true : rem === 'no' ? false : null;
+    s.remainingTask = val(a, K('q9e'));
+    s.remainingUnknown = s.improved && (s.remaining === null || (s.remaining && (!s.remainingTask || s.remainingTask === 'nolose' || (s.remainingTask === 'otra' && !DC.text(a, K('q9e'), 'otra')))));
+
+    s.acc = has(a, 'q12', 'accesible');
+    s.accItems = (val(a, 'qacc') || []).filter(function (x) { return x !== 'noespecificar'; });
+    s.accUnspecified = s.acc && !s.accItems.length && !DC.text(a, 'qacc', 'detalle');
+
     s.videos = has(a, K('q11'), 'videos');
     s.matsUnknown = has(a, K('q11'), 'nolose');
     s.access = val(a, K('q11c'));
@@ -219,10 +247,11 @@ window.DC = window.DC || {};
 
   var INSUF_ENERGY = 'No tenemos información suficiente para proponer una ayuda tecnológica para esta dificultad.';
 
-  function decide(a, d, s) {
+  function baseDecision(a, d, s) {
     var sitCat = CATALOG[s.situation] || {};
     var entry = sitCat[s.task] || sitCat.otra;
     var r = { entry: entry, format: null, test: false, hyp: null };
+    var described = function (lvl) { return s.relevant === true ? 'sindescribir' : lvl; };
 
     if (s.works && s.relevant !== true) {
       r.level = 'actual'; r.format = 'none';
@@ -245,7 +274,7 @@ window.DC = window.DC || {};
       return r;
     }
     if (s.taskVague && s.obstacleVague) {
-      r.level = 'insuficiente'; r.format = 'moreinfo';
+      r.level = described('insuficiente'); r.format = 'moreinfo';
       r.text = 'Con la información disponible no podemos describir una ayuda concreta sin inventar detalles.';
       r.reason = 'Falta saber con precisión la tarea y qué la dificulta.';
       return r;
@@ -253,7 +282,7 @@ window.DC = window.DC || {};
     if (s.obstacle === 'energia') {
       if (ENERGY[s.energy]) { entry = ENERGY[s.energy]; r.entry = entry; }
       else {
-        r.level = 'insuficiente'; r.format = 'moreinfo';
+        r.level = s.energyAmbiguous ? described('insuficiente') : 'insuficiente'; r.format = 'moreinfo';
         r.text = INSUF_ENERGY;
         if (s.energyAmbiguous && (s.situation === 'P' || s.situation === 'D')) {
           r.hyp = s.situation === 'P'
@@ -292,12 +321,11 @@ window.DC = window.DC || {};
       return r;
     }
     if (s.obstacle === 'ninguno') {
-      r.level = 'insuficiente'; r.format = 'moreinfo';
+      r.level = described('insuficiente'); r.format = 'moreinfo';
       r.text = 'Has señalado consecuencias, pero ningún obstáculo concreto. Sin saber qué paso cuesta, no proponemos una herramienta todavía.';
       r.reason = 'Falta saber en qué paso de la tarea está la dificultad.';
       return r;
     }
-    /* Propuesta */
     r.format = chooseFormat(entry, a, s); r.test = true;
     r.text = entry.idea;
     if (r.format === 'existing') r.text += s.obstacle === 'herramienta'
@@ -306,7 +334,8 @@ window.DC = window.DC || {};
     var missing = [];
     if (s.taskVague) missing.push('la tarea concreta');
     if (s.obstacleVague) missing.push('qué dificulta la tarea');
-    if (s.relevant !== true) missing.push('qué consecuencia tiene');
+    if (s.consState === 'sindescribir') missing.push('cuáles son las consecuencias');
+    else if (s.relevant !== true) missing.push('qué consecuencia tiene');
     if (s.matsUnknown) missing.push('qué materiales se usan');
     if (s.accessRelevant && (!s.access || s.access === 'nolose' || s.access === 'otrapersona')) missing.push('si se puede acceder a los materiales');
     if (s.unresolved.length) missing.push('una aparente contradicción en tus respuestas');
@@ -314,6 +343,33 @@ window.DC = window.DC || {};
     if (missing.length) { r.level = 'plausible'; r.reason = 'Falta confirmar ' + missing.slice(0, 2).join(' y ') + '.'; }
     else { r.level = 'ok'; r.reason = 'La tarea, el obstáculo y sus consecuencias están definidos.'; }
     if (s.taskVague) r.test = false;
+    return r;
+  }
+
+  /* Una mejora que ya funciona: mantenerla, complementarla solo si queda
+     algo por facilitar, y nunca proponer una aplicación nueva por defecto. */
+  function decide(a, d, s) {
+    var r = baseDecision(a, d, s);
+    if (!s.improved) return r;
+    var helped = s.helpedUnknown ? 'la mejora que probaste' : 'lo que te ayudó (' + s.helped.map(function (x) { return lc(DC.labelOf(s.K('q9c'), x, a, d)); }).join(', ') + ')';
+    if (s.remaining === false) {
+      return { level: 'actual', format: 'keep', test: false, entry: null,
+        text: 'La mejora que probaste te funciona suficientemente bien ahora. Lo razonable es mantener ' + helped + '; no proponemos una herramienta nueva.',
+        reason: 'Indicaste que, con esa mejora, ahora te funciona suficientemente bien.' };
+    }
+    var keep = 'Mantén ' + helped + ', porque te ha servido.';
+    if (s.remaining === true && !s.remainingUnknown && (r.level === 'ok' || r.level === 'plausible')) {
+      var cat = CATALOG[s.situation] || {};
+      var e2 = cat[s.remainingTask] || r.entry;
+      return { level: 'plausible', format: 'complement', test: true, entry: e2, hyp: r.hyp,
+        text: keep + ' Para lo que queda, se podría complementar con esto: ' + lc(e2.idea),
+        reason: 'Ya tienes una mejora que funciona; falta comprobar que el complemento aporta algo en lo que queda.' };
+    }
+    r.text = keep + ' ' + r.text;
+    if (r.level === 'ok' || r.level === 'plausible') {
+      r.level = 'plausible'; r.test = false; r.format = 'complement';
+      r.reason = 'Ya tienes una mejora que funciona y todavía no sabemos qué queda por facilitar.';
+    }
     return r;
   }
 
@@ -327,16 +383,23 @@ window.DC = window.DC || {};
     return c.slice(0, 3);
   }
 
+  /* Pregunta pendiente: se elige por su utilidad para cambiar la propuesta
+     y nunca repite una pregunta ya respondida con «No lo sé». */
   function pendingQuestion(r, a, d, s) {
     if (r.level === 'actual' || r.level === 'norelevante') return null;
-    if (s.taskVague) return s.situation === 'G' ? PENDING_Q.G : '¿Qué intentabas hacer exactamente la última vez que te ocurrió?';
-    if (s.obstacle === 'energia' && !ENERGY[s.energy]) {
-      return s.energyAmbiguous
-        ? 'La última vez que te costó, ¿qué pasaba: la tarea parecía demasiado grande, tenías varias cosas y te costaba elegir, o no tenías claro el siguiente paso?'
-        : null;
+    if (s.consState === 'sindescribir') return 'La última vez que ocurrió, ¿qué cambió para ti por no poder hacerlo como querías?';
+    if (s.taskVague) {
+      if (s.learn === 'nolose' || s.task === 'nolose') return 'Piensa en la última vez: ¿qué tenías delante y qué querías conseguir?';
+      return '¿Qué intentabas hacer exactamente la última vez que te ocurrió?';
     }
-    if (s.obstacleVague || s.obstacle === 'ninguno') return 'La última vez que ocurrió, ¿en qué paso concreto te quedaste parado/a o perdiste más tiempo?';
-    if (s.relevant === null) return '¿Qué pasa cuando esta tarea sale mal o tarda más de la cuenta?';
+    if (s.improved && s.remainingUnknown) return 'Con la mejora que ya usas, ¿en qué momento sigue costándote?';
+    if (s.obstacle === 'energia' && s.energy === 'otra') return 'Si puedes, describe en una frase lo que te pasaba aquella vez.';
+    if (s.obstacleVague || s.obstacle === 'ninguno') return s.obstacle === 'nolose'
+      ? 'La última vez, ¿en qué momento concreto dejaste de avanzar?'
+      : 'La última vez que ocurrió, ¿en qué paso concreto te quedaste parado/a o perdiste más tiempo?';
+    if (s.relevant === null) return s.consState === 'noseguro' && has(a, s.K('q10b'), 'nolose')
+      ? 'La última vez que salió peor de lo que querías, ¿qué pasó después?'
+      : '¿Qué pasa cuando esta tarea sale mal o tarda más de la cuenta?';
     if (s.unresolved.length) return 'Tu forma actual de hacerlo, ¿te resuelve la tarea por completo o solo en parte?';
     if (s.keepAsIs && s.strong) return '¿Qué parte de la tarea provoca la consecuencia que señalaste?';
     if (r.test && (s.accessRelevant || s.integration)) return s.videos
@@ -346,13 +409,40 @@ window.DC = window.DC || {};
     return null;
   }
 
+  /* Otros puntos que siguen pendientes (incluye seguimientos omitidos
+     para mantener el cuestionario breve). */
+  function pendingPoints(r, a, d, s, question) {
+    var p = [];
+    if (s.consState === 'sindescribir' && question && question.indexOf('qué cambió para ti') === -1) p.push('Cuáles son las consecuencias de esta situación.');
+    if (s.taskVague) p.push('Qué intentabas hacer exactamente: la tarea sigue siendo demasiado general.');
+    if (s.helpedUnknown) p.push('Qué fue exactamente lo que te ayudó.');
+    if (s.improved && s.remainingUnknown) p.push('Qué queda por facilitar con la mejora que ya usas.');
+    if (s.energySkipped) p.push('Qué acabaste haciendo la última vez que te faltaron energía o ganas (no lo preguntamos porque había otros puntos más útiles y queríamos mantener el cuestionario breve).');
+    if (s.accUnspecified) p.push('Si quieres concretarlo, qué ajustes de accesibilidad necesitas.');
+    if (s.accessRelevant && (!s.access || s.access === 'nolose')) p.push('Si se puede acceder a los materiales que usas.');
+    return p.filter(function (x) { return x !== question; });
+  }
+
+  function requirements(a, d, s) {
+    var req = (val(a, 'q12') || []).filter(function (x) { return x !== 'continuar' && x !== 'accesible'; }).map(function (x) { return DC.labelOf('q12', x, a, d); });
+    if (s.acc) {
+      if (s.accUnspecified) req.push('La ayuda tendría que adaptarse a tus necesidades de accesibilidad; falta concretar qué ajustes necesitas.');
+      else {
+        var items = s.accItems.map(function (x) { return lc(DC.labelOf('qacc', x, a, d)); });
+        var det = DC.text(a, 'qacc', 'detalle');
+        req.push('Accesibilidad: permitirte ' + items.join(', ') + (det ? ' (' + quote(det) + ')' : '') + '.');
+      }
+    }
+    return req;
+  }
+
   function facts(a, d, s) {
     var K = s.K, f = {}, r = s.r;
     if (r.source === 'alt') f.situation = 'Indicaste que en el último mes no pudiste empezar o mantener esto: ' + lc(DC.labelOf('qalt', r.alt, a, d)) + '.';
     else {
       var fr = DC.SCALE.filter(function (x) { return x.id === val(a, 'q2' + s.situation); })[0];
       f.situation = fr && fr.rank
-        ? 'Indicaste que ' + lc(fr.label) + ' de las últimas dos semanas ' + DC.SITUATIONS[s.situation].fact + '.'
+        ? 'Indicaste que ' + lc(fr.label) + ' de las últimas dos semanas ' + DC.SITUATIONS[s.situation].fact + (s.r.source === 'single' || s.r.source === 'chosen' || s.r.source === 'consequences' ? ', y que te causó una dificultad que te importa.' : '.')
         : 'Elegiste explorar esta situación: ' + lc(DC.SITUATIONS[s.situation].short) + '.';
     }
     var amb = val(a, K('q5'));
@@ -360,26 +450,45 @@ window.DC = window.DC || {};
     if (s.task) {
       var tt = DC.text(a, K('q6'), 'otra');
       f.task = (s.task === 'otra' ? (tt ? 'Describiste la tarea así: ' + quote(tt) + '.' : 'Indicaste otra tarea, sin más detalle.')
-        : (s.situation === 'G' ? 'Indicaste que lo que más te cuesta es: ' : 'Indicaste que la tarea más parecida es: ') + lc(DC.labelOf(K('q6'), s.task, a, d)) + '.') + ambTxt;
+        : (s.situation === 'G' ? 'Indicaste que lo que más te cuesta es: ' : 'Indicaste que la tarea más parecida es: ') + lc(DC.labelOf(K('q6'), s.task, a, d)) + '.');
+      if (s.learn) {
+        var lt = DC.text(a, K('q6b'), 'otra');
+        f.task += s.learn === 'nolose' ? ' No sabes concretar más qué intentabas hacer.'
+          : ' Concretamente: ' + (s.learn === 'otra' ? (lt ? quote(lt) : 'otra actividad, sin más detalle') : lc(DC.labelOf(K('q6b'), s.learn, a, d))) + '.';
+      }
+      f.task += ambTxt;
     }
     if (s.obstacle) {
       var ot = DC.text(a, K('q7'), 'otro');
       f.obstacle = s.obstacle === 'otro' ? (ot ? 'Describiste lo que la dificultó así: ' + quote(ot) + '.' : 'Indicaste otro obstáculo, sin más detalle.')
         : 'Indicaste que lo que más la dificultó fue: ' + lc(DC.labelOf(K('q7'), s.obstacle, a, d)) + '.';
       if (s.energy) f.obstacle += ' Lo que mejor lo describe: ' + lc(DC.labelOf(K('q7b'), s.energy, a, d)) + '.';
+      if (s.energyBehavior) f.obstacle += ' La última vez: ' + lc(DC.labelOf(K('q7c'), s.energyBehavior, a, d)) + '.';
     }
+    if (s.consState === 'sindescribir') f.consequence = 'Has indicado que esta situación tiene consecuencias relevantes, pero todavía no sabemos cuáles.';
+    else if (s.consState === 'identificadas' && s.consClarified) f.consequence = 'Has aclarado que sí tiene consecuencias relevantes: ' + quote(s.consText) + '.';
+    else if (s.consState === 'identificadas') {
+      f.consequence = 'Consecuencia: ' + val(a, K('q10b')).filter(function (x) { return RELEVANT.indexOf(x) !== -1; }).map(function (x) { return lc(DC.labelOf(K('q10b'), x, a, d)); }).join('; ') + '.';
+      if (val(a, K('q10c'))) f.consequence += ' Tiempo en los pasos difíciles: ' + lc(DC.labelOf(K('q10c'), val(a, K('q10c')), a, d)) + '.';
+    } else if (s.consState === 'noseguro') f.consequence = 'No está claro todavía si esta situación tiene consecuencias relevantes para ti.';
+    else if (s.consState === 'ninguna') f.consequence = 'Has indicado que no tiene consecuencias relevantes.';
     if (val(a, K('q8'))) {
       if (s.notTried) f.method = 'Indicaste que todavía no has intentado hacer esa tarea.';
       else {
         var tool = DC.text(a, K('q8'), 'tool');
         f.method = 'La haces así: ' + val(a, K('q8')).map(function (x) { return lc(DC.labelOf(K('q8'), x, a, d)); }).join(', ') + (tool ? ' (' + quote(tool) + ')' : '') + '.';
         if (val(a, K('q9'))) f.method += ' Te funciona: ' + lc(DC.labelOf(K('q9'), val(a, K('q9')), a, d)) + '.';
-        if (val(a, K('q9b'))) f.method += ' ¿Has probado algo para facilitarla?: ' + lc(DC.labelOf(K('q9b'), val(a, K('q9b')), a, d)) + '.';
+        if (s.improved) {
+          var det = DC.text(a, K('q9c'), 'detalle');
+          f.method += ' Probaste algo para facilitarla y te ha servido' + (s.helpedUnknown ? ' (no recuerdas qué fue)' : ': ' + s.helped.map(function (x) { return lc(DC.labelOf(K('q9c'), x, a, d)); }).join(', ')) + (det ? ' (' + quote(det) + ')' : '') + '.';
+          if (s.remaining === false) f.method += ' Con esa mejora, ahora te funciona suficientemente bien.';
+          else if (s.remaining === true) {
+            var rt = s.remainingTask, rtt = DC.text(a, K('q9e'), 'otra');
+            f.method += ' Aún queda algo por facilitar' + (val(a, K('q9d')) === 'ocasiones' ? ' en algunas ocasiones' : '') + ': ' +
+              (!rt || rt === 'nolose' ? 'todavía no sabes qué.' : rt === 'otra' ? (rtt ? quote(rtt) + '.' : 'otra cosa, sin más detalle.') : lc(DC.labelOf(K('q9e'), rt, a, d)) + '.');
+          } else f.method += ' No sabes si queda algo por facilitar.';
+        } else if (val(a, K('q9b'))) f.method += ' ¿Has probado algo para facilitarla?: ' + lc(DC.labelOf(K('q9b'), val(a, K('q9b')), a, d)) + '.';
       }
-    }
-    if (val(a, K('q10b'))) {
-      f.consequence = 'Consecuencia: ' + val(a, K('q10b')).map(function (x) { return lc(DC.labelOf(K('q10b'), x, a, d)); }).join('; ') + '.';
-      if (val(a, K('q10c'))) f.consequence += ' Tiempo en los pasos difíciles: ' + lc(DC.labelOf(K('q10c'), val(a, K('q10c')), a, d)) + '.';
     }
     if (val(a, K('q11'))) {
       f.materials = 'Utilizas o consultas: ' + val(a, K('q11')).map(function (x) { return lc(DC.labelOf(K('q11'), x, a, d)); }).join(', ') + '.';
@@ -392,10 +501,13 @@ window.DC = window.DC || {};
     var out = [];
     if (s.energy && ENERGY_INFER[s.energy]) out.push(ENERGY_INFER[s.energy]);
     else if (s.obstacle && OBSTACLE_INFER[s.obstacle]) out.push(OBSTACLE_INFER[s.obstacle]);
+    if (s.energyBehavior && s.energyBehavior !== 'norecuerdo') out.push('Lo que acabaste haciendo describe lo que pasó, no su causa.');
+    if (s.improved) out.push('Ya tienes una mejora que te funciona; cualquier ayuda debería mantenerla o completarla, no sustituirla.');
     if (s.works) out.push('Tu forma actual parece cumplir buena parte de su función.');
-    else if (['esfuerzo', 'parte', 'noterminar'].indexOf(val(a, s.K('q9'))) !== -1) out.push('Tu forma actual cumple solo en parte o con más esfuerzo del que quisieras.');
+    else if (['esfuerzo', 'parte', 'noterminar', 'depende'].indexOf(val(a, s.K('q9'))) !== -1 && !s.improved) out.push('Tu forma actual cumple solo en parte o con más esfuerzo del que quisieras.');
     if (s.notTried) out.push('No tenemos información sobre un método actual.');
     else if (val(a, s.K('q9b')) === 'no') out.push('No has indicado haber probado una mejora.');
+    if (s.consClarified) out.push('Tu aclaración posterior sobre las consecuencias sustituye a tu respuesta inicial en esta interpretación; la inicial se conserva en tus respuestas.');
     if (d.uncertain && s.n === 1) out.push('No estabas seguro/a de que esta situación te causara una dificultad, así que la interpretación es más tentativa.');
     if (s.r.source === 'freq') out.push('Exploramos esta situación por ser la más frecuente, como criterio provisional; eso no significa que sea la más importante.');
     if (s.n === 1 && val(a, 'qconfirm') === 'parte') out.push('Indicaste que esta situación representa solo en parte lo que más te interesaría facilitar.');
@@ -407,16 +519,19 @@ window.DC = window.DC || {};
     var s = signals(a, d, n);
     var r = decide(a, d, s);
     var f = facts(a, d, s);
-    var evidence = ['situation', 'task', 'obstacle', 'method', 'consequence', 'materials'].filter(function (k) { return f[k]; }).map(function (k) { return f[k]; });
+    var evidence = ['situation', 'task', 'obstacle', 'consequence', 'method', 'materials'].filter(function (k) { return f[k]; }).map(function (k) { return f[k]; });
     evidence = evidence.slice(0, commentEvidence ? 4 : 5);
     if (commentEvidence) evidence.push(commentEvidence);
     var summary = [
       'Situación: ' + lc(DC.SITUATIONS[s.situation].short) + '.',
-      s.task ? (s.situation === 'G' ? 'Lo que más cuesta: ' : 'Tarea: ') + (s.task === 'otra' ? (DC.text(a, s.K('q6'), 'otra') ? quote(DC.text(a, s.K('q6'), 'otra')) : 'otra tarea') : lc(DC.labelOf(s.K('q6'), s.task, a, d))) + '.' : '',
+      s.task ? (s.situation === 'G' ? 'Lo que más cuesta: ' : 'Tarea: ') + (s.task === 'otra' ? (DC.text(a, s.K('q6'), 'otra') ? quote(DC.text(a, s.K('q6'), 'otra')) : 'otra tarea, sin concretar') : lc(DC.labelOf(s.K('q6'), s.task, a, d))) +
+        (s.learn && s.learn !== 'nolose' && s.learn !== 'otra' ? ' (' + lc(DC.labelOf(s.K('q6b'), s.learn, a, d)) + ')' : s.learn ? ' (sin concretar)' : '') + '.' : '',
+      val(a, s.K('q5')) && ['varios', 'otro'].indexOf(val(a, s.K('q5'))) === -1 ? 'Contexto: ' + lc(DC.labelOf(s.K('q5'), val(a, s.K('q5')), a, d)) + '.' : '',
       s.obstacle ? 'Obstáculo: ' + (s.obstacle === 'otro' && DC.text(a, s.K('q7'), 'otro') ? quote(DC.text(a, s.K('q7'), 'otro')) : lc(DC.labelOf(s.K('q7'), s.obstacle, a, d))) + '.' : '',
-      val(a, s.K('q8')) ? (s.notTried ? 'Todavía no has intentado hacer esa tarea.' : 'Método actual: ' + val(a, s.K('q8')).map(function (x) { return lc(DC.labelOf(s.K('q8'), x, a, d)); }).join(', ') + '.') : ''
+      val(a, s.K('q8')) ? (s.notTried ? 'Todavía no has intentado hacer esa tarea.' : 'Método actual: ' + val(a, s.K('q8')).map(function (x) { return lc(DC.labelOf(s.K('q8'), x, a, d)); }).join(', ') + (s.improved ? ', con una mejora que te ha servido' : '') + '.') : ''
     ].filter(Boolean).join(' ');
     var test = r.test && r.entry ? r.entry.f.slice(0, 3).map(function (x) { return { text: x[0], why: whyText(x[1], a, d, s) }; }) : [];
+    var question = pendingQuestion(r, a, d, s);
     return {
       n: n,
       situation: s.situation,
@@ -426,13 +541,15 @@ window.DC = window.DC || {};
       hypothesis: r.text,
       extraHypothesis: r.hyp,
       format: FORMATS[r.format] || FORMATS.none,
-      formatNote: (r.level === 'ok' || r.level === 'plausible') && r.format !== 'process' ? 'Formato orientativo: se confirmaría con la primera prueba.' : '',
+      formatNote: (r.level === 'ok' || r.level === 'plausible') && ['process', 'complement', 'keep'].indexOf(r.format) === -1 ? 'Formato orientativo: se confirmaría con la primera prueba.' : '',
+      requirements: requirements(a, d, s),
       inferences: inferences(r, a, d, s),
       checks: checks(r, a, s),
       firstTest: test,
-      firstTestNote: test.length ? '' : (r.level === 'ok' || r.level === 'plausible' ? 'Antes de proponer una prueba conviene aclarar la pregunta pendiente.' : 'No proponemos una prueba con lo explorado.'),
-      question: pendingQuestion(r, a, d, s),
-      measure: (r.level === 'ok' || r.level === 'plausible') ? (r.format === 'process' ? 'La próxima vez que hagas la tarea con ese cambio, compárala con la anterior.' : MEASURES[s.situation]) : null,
+      firstTestNote: test.length ? '' : (r.level === 'ok' || r.level === 'plausible' || r.level === 'sindescribir' ? 'Antes de proponer una prueba conviene aclarar la pregunta pendiente.' : 'No proponemos una prueba con lo explorado.'),
+      question: question,
+      pendingPoints: pendingPoints(r, a, d, s, question),
+      measure: (r.level === 'ok' || r.level === 'plausible') && r.test ? (r.format === 'process' ? 'La próxima vez que hagas la tarea con ese cambio, compárala con la anterior.' : MEASURES[s.situation]) : (r.format === 'process' && r.level === 'plausible' ? 'La próxima vez que hagas la tarea con ese cambio, compárala con la anterior.' : null),
       status: { level: r.level, label: STATUS[r.level], symbol: SYMBOL[r.level], reason: r.reason }
     };
   }
@@ -477,7 +594,7 @@ window.DC = window.DC || {};
       return { short: DC.SITUATIONS[s].short, question: PENDING_Q[s] };
     });
 
-    var limited = !main || ['insuficiente', 'actual', 'norelevante'].indexOf(main.status.level) !== -1;
+    var limited = !main || ['insuficiente', 'actual', 'norelevante', 'sindescribir'].indexOf(main.status.level) !== -1;
     var scopeNote = 'Estas conclusiones se refieren solo a lo explorado en el cuestionario; no describen todas tus necesidades.';
     if (limited && (pending.length || (c && c.pending))) scopeNote += ' Quedan situaciones o información pendientes de explorar.';
 

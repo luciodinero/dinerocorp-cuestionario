@@ -336,6 +336,7 @@
     h += '<dl class="kv"><dt>Formato</dt><dd>' + esc(m.format) + '</dd></dl>';
     if (m.formatNote) h += '<p class="muted small">' + esc(m.formatNote) + '</p>';
     if (m.inferences.length) h += '<p class="sub">Esto sugiere:</p>' + list(m.inferences);
+    if (m.requirements.length) h += '<p class="sub">Condiciones que tendría que cumplir cualquier ayuda:</p>' + list(m.requirements);
     if (m.checks.length) h += '<p class="sub">Antes de construir nada, falta comprobar:</p>' + list(m.checks);
     h += '</section>';
     h += '<section><h2>Primera prueba</h2>';
@@ -343,7 +344,8 @@
       h += '<ol class="features">' + m.firstTest.map(function (f) { return '<li><span>' + esc(f.text) + '</span><span class="why">' + esc(f.why) + '</span></li>'; }).join('') + '</ol>';
     } else h += '<p>' + esc(m.firstTestNote) + '</p>';
     h += '</section>';
-    h += '<section><h2>Pregunta pendiente más importante</h2>' + (m.question ? '<p class="ask">' + esc(m.question) + '</p>' : '<p>Ninguna esencial para esta situación.</p>') + '</section>';
+    h += '<section><h2>Pregunta pendiente más importante</h2>' + (m.question ? '<p class="ask">' + esc(m.question) + '</p>' : '<p>Ninguna esencial para esta situación.</p>') +
+      (m.pendingPoints.length ? '<p class="sub">Otros puntos pendientes:</p>' + list(m.pendingPoints) : '') + '</section>';
     h += '<section><h2>Cómo comprobar si ayuda</h2><p>' + esc(m.measure || 'No aplica mientras no haya una propuesta que probar.') + '</p></section>';
     h += '<section><h2>Estado de la propuesta</h2>' + statusHTML(m.status) + '</section>';
     return h;

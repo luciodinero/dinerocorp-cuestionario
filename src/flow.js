@@ -115,23 +115,50 @@ DC.needsAccess = function (a, n, r) {
   return mats && rel;
 };
 
+/* Seguimiento de «aprender o practicar algo»: solo si la tarea no está concretada */
+DC.needsLearnDetail = function (a, n, r) { return r.situation === 'F' && DC.RV(a, n, 'q6') === 'aprender'; };
+
+/* «¿Qué acabaste haciendo?»: prioridad mínima. Solo con energía/ganas sin
+   causa clara y si no hay otro seguimiento más útil en esta situación. */
+DC.needsEnergyBehaviour = function (a, d, n) {
+  if (DC.RV(a, n, 'q7') !== 'energia' || ['nolose', 'otra'].indexOf(DC.RV(a, n, 'q7b')) === -1) return false;
+  var r = DC.routeObj(d, n);
+  var other = DC.needsLearnDetail(a, n, r) || DC.RV(a, n, 'q9b') === 'sirve' || DC.has(a, 'q12', 'accesible') ||
+    DC.clarification(a, n, 'c_consecuencia') === 'relevante';
+  return !other;
+};
+
 DC.path = function (a, d) {
   d = d || DC.derive(a);
   var p = [];
   function add(id, qs, opt) { p.push({ id: id, qs: qs || [id], optional: !!opt }); }
   function block(n) {
     var r = DC.routeObj(d, n), K = function (b) { return DC.K(n, b); };
-    add(K('q5')); add(K('q6')); add(K('q7'));
+    add(K('q5')); add(K('q6'));
+    if (DC.needsLearnDetail(a, n, r)) add(K('q6b'));
+    add(K('q7'));
     if (DC.RV(a, n, 'q7') === 'energia') add(K('q7b'));
     add(K('q8'));
     if (!DC.has(a, K('q8'), 'nointentado')) add(K('q9'), [K('q9'), K('q9b')]);
+    if (DC.RV(a, n, 'q9b') === 'sirve') {
+      add(K('q9c'), [K('q9c'), K('q9d')]);
+      if (['si', 'ocasiones'].indexOf(DC.RV(a, n, 'q9d')) !== -1) add(K('q9e'));
+    }
     if (DC.scaleRank(DC.val(a, 'q2' + r.situation)) === 0) add(K('q10a'));
     add(K('q10b'));
     if (DC.has(a, K('q10b'), 'tiempo')) add(K('q10c'));
     add(K('q11'));
     if (DC.needsAccess(a, n, r)) add(K('q11c'));
   }
-  function clar(n) { if (DC.contradictions(a, d, n).length) add(DC.K(n, 'qc'), null, true); }
+  /* Aclaraciones y seguimientos posteriores de una situación:
+     contradicción → descripción de la consecuencia (si aclaró que sí la hay)
+     → qué acabó haciendo (solo si no hay otro seguimiento más útil). */
+  function clar(n) {
+    if (DC.contradictions(a, d, n).length) add(DC.K(n, 'qc'), null, true);
+    if (DC.clarification(a, n, 'c_consecuencia') === 'relevante') add(DC.K(n, 'qconsec'), null, true);
+    if (DC.needsEnergyBehaviour(a, d, n)) add(DC.K(n, 'q7c'));
+  }
+  function common() { add('q12'); if (DC.has(a, 'q12', 'accesible')) add('qacc', null, true); }
   function commentTail() {
     add('q13', null, true);
     if (DC.val(a, 'q13')) {
@@ -152,7 +179,7 @@ DC.path = function (a, d) {
   if (d.route === 'pending' || (d.route === 'alt' && !d.r1)) { estimate(12); return p; }
 
   if (d.r1 && !d.noneFirst) {
-    block(1); add('q12'); clar(1); add('qconfirm');
+    block(1); common(); clar(1); add('qconfirm');
     if (DC.val(a, 'qconfirm') === 'otra') {
       add('qswitch');
       if (d.r2 && d.r2.trigger === 'confirm') { block(2); clar(2); }
@@ -161,7 +188,7 @@ DC.path = function (a, d) {
     if (d.r2 && d.r2.trigger === 'comment') { block(2); clar(2); }
   } else {
     commentTail();
-    if (d.r1) { block(1); add('q12'); clar(1); }
+    if (d.r1) { block(1); common(); clar(1); }
   }
   return p;
 };
@@ -224,7 +251,7 @@ DC.labelOf = function (key, id, a, d) {
   return o ? o.label : id;
 };
 
-DC.OPTIONAL_KEYS = ['qcomment2'];
+DC.OPTIONAL_KEYS = ['qcomment2', 'qacc'];
 DC.isAnswered = function (key, a) {
   var def = DC.def(key);
   if (def.type === 'text' || def.type === 'clarify' || DC.OPTIONAL_KEYS.indexOf(DC.baseOf(key)) !== -1) return true;
@@ -242,7 +269,7 @@ DC.isComplete = function (a) {
 var STRONG = ['errores', 'gasto', 'oportunidad', 'impide'];
 DC.CONTRADICTIONS = [
   {
-    id: 'c_metodo',
+    id: 'c_metodo', target: 'q9',
     test: function (a, d, n) {
       var K = function (b) { return DC.K(n, b); };
       return DC.val(a, K('q9')) === 'bien' && (DC.has(a, K('q8'), 'pospongo') || DC.hasAny(a, K('q10b'), ['errores', 'oportunidad', 'impide']));
@@ -260,7 +287,7 @@ DC.CONTRADICTIONS = [
     ]
   },
   {
-    id: 'c_consecuencia',
+    id: 'c_consecuencia', target: 'q10b',
     test: function (a, d, n) {
       var r = DC.routeObj(d, n);
       return r && !d.uncertain && (DC.val(a, 'q3') || []).indexOf(r.situation) !== -1 && DC.has(a, DC.K(n, 'q10b'), 'ninguna');
@@ -273,7 +300,7 @@ DC.CONTRADICTIONS = [
     ]
   },
   {
-    id: 'c_cambio',
+    id: 'c_cambio', target: 'q12',
     test: function (a, d, n) { return DC.has(a, 'q12', 'continuar') && DC.hasAny(a, DC.K(n, 'q10b'), STRONG); },
     text: function (a, d, n) {
       var c = STRONG.filter(function (x) { return DC.has(a, DC.K(n, 'q10b'), x); })[0];
@@ -309,6 +336,24 @@ DC.answerText = function (key, a, d) {
   return out;
 };
 
+DC.laterClarifications = function (key, a, d) {
+  var base = DC.baseOf(key), n = DC.routeOf(key), out = [];
+  (n ? [n] : [1, 2]).forEach(function (rn) {
+    DC.contradictions(a, d, rn).forEach(function (c) {
+      if (c.target !== base) return;
+      var v = DC.clarification(a, rn, c.id);
+      if (!v || v === 'nodecir') return;
+      var lbl = c.options.filter(function (o) { return o.id === v; })[0].label;
+      if (c.id === 'c_consecuencia' && v === 'relevante') {
+        var t = DC.RV(a, rn, 'qconsec');
+        lbl += t ? ' («' + t + '»)' : ' (sin describir todavía)';
+      }
+      out.push(lbl);
+    });
+  });
+  return out;
+};
+
 DC.summary = function (a) {
   var d = DC.derive(a), rows = [];
   DC.path(a, d).forEach(function (s) {
@@ -317,15 +362,13 @@ DC.summary = function (a) {
       var def = DC.def(key), n = DC.routeOf(key);
       var prefix = (n === 2 ? '[Segunda situación] ' : '');
       if (def.type === 'text' && !a[key].v) return;
-      if (def.type === 'clarify') {
-        DC.contradictions(a, d, n).forEach(function (c) {
-          var v = a[key].v && a[key].v[c.id];
-          if (v) rows.push({ q: key, screen: s.id, title: prefix + c.text(a, d, n), answer: c.options.filter(function (o) { return o.id === v; })[0].label });
-        });
-        return;
-      }
+      /* Las aclaraciones se muestran junto a la respuesta que aclaran */
+      if (def.type === 'clarify' || DC.baseOf(key) === 'qconsec') return;
       if (Array.isArray(a[key].v) && !a[key].v.length) return;
-      rows.push({ q: key, screen: s.id, title: prefix + DC.titleFor(key, a, d), answer: DC.answerText(key, a, d) });
+      var answer = DC.answerText(key, a, d);
+      var later = DC.laterClarifications(key, a, d);
+      if (later.length) answer = 'Respuesta inicial: ' + answer + '. Aclaración posterior: ' + later.join(' · ');
+      rows.push({ q: key, screen: s.id, title: prefix + DC.titleFor(key, a, d), answer: answer });
     });
   });
   return rows;

@@ -429,6 +429,92 @@ DC.QUESTIONS = {
     ]
   },
 
+  /* ---------- Seguimientos (solo aparecen si se activan) ---------- */
+  q6b: {
+    route: true, type: 'single', section: 'La tarea concreta',
+    title: '¿Qué estabas intentando hacer?',
+    help: { examples: 'Entender un tema de un curso, recordar los pasos de un procedimiento del trabajo o practicar un idioma o un instrumento.', note: DC.EXAMPLE_NOTE },
+    options: [
+      { id: 'comprender', label: 'Comprender una explicación' },
+      { id: 'recordar', label: 'Recordar información' },
+      { id: 'ejercicios', label: 'Resolver ejercicios o practicar una habilidad' },
+      { id: 'entrega', label: 'Preparar una entrega o un resultado' },
+      { id: 'otra', label: 'Otra actividad', textField: { max: 140, label: 'Descríbela en pocas palabras (opcional)' } },
+      { id: 'nolose', label: 'No lo sé' }
+    ]
+  },
+
+  q7c: {
+    route: true, type: 'single', section: 'Qué lo dificultó',
+    title: 'La última vez, ¿qué acabaste haciendo?',
+    help: { explain: 'Solo describe lo que pasó; no saca conclusiones sobre el motivo.' },
+    options: [
+      { id: 'tarde', label: 'Empecé más tarde' },
+      { id: 'otraact', label: 'Hice otra actividad' },
+      { id: 'descanse', label: 'Descansé' },
+      { id: 'ayuda', label: 'Pedí ayuda' },
+      { id: 'sinterminar', label: 'Lo dejé sin terminar' },
+      { id: 'otra', label: 'Otra cosa' },
+      { id: 'norecuerdo', label: 'No lo recuerdo' }
+    ]
+  },
+
+  q9c: {
+    route: true, type: 'multi', max: 2, section: 'Lo que ya te funciona',
+    title: '¿Qué fue lo que te ayudó?',
+    options: [
+      { id: 'organizar', label: 'Cambiar cómo organizo o divido la tarea' },
+      { id: 'herramienta', label: 'Utilizar una herramienta o un material' },
+      { id: 'alguien', label: 'Hacerlo con ayuda de alguien' },
+      { id: 'momento', label: 'Cambiar el momento o las condiciones' },
+      { id: 'otra', label: 'Otra cosa' },
+      { id: 'norecuerdo', label: 'No lo recuerdo', exclusive: true }
+    ],
+    extraText: { key: 'detalle', max: 120, label: 'Si quieres, indica qué cambiaste o utilizaste (opcional)', showIf: ['organizar', 'herramienta', 'alguien', 'momento', 'otra'] }
+  },
+
+  q9d: {
+    route: true, type: 'single', section: 'Lo que ya te funciona',
+    title: 'Con esa mejora, ¿queda algo que te gustaría facilitar?',
+    options: [
+      { id: 'si', label: 'Sí' },
+      { id: 'ocasiones', label: 'Solo en algunas ocasiones' },
+      { id: 'no', label: 'No, ahora me funciona suficientemente bien' },
+      { id: 'nolose', label: 'No lo sé' }
+    ]
+  },
+
+  q9e: {
+    route: true, type: 'single', section: 'Lo que ya te funciona',
+    title: '¿Qué te gustaría facilitar todavía?',
+    help: { explain: 'Elige lo que más se parezca a lo que queda pendiente.' },
+    options: function (a, d, ctx) {
+      return (DC.TASKS[ctx.r.situation] || []).filter(function (o) { return o.id !== 'nolose'; }).concat([{ id: 'nolose', label: 'No lo sé' }]);
+    }
+  },
+
+  qconsec: {
+    route: true, type: 'text', max: 140, section: 'Una aclaración',
+    title: '¿En qué notas esa consecuencia?',
+    help: { explain: 'Opcional. Por ejemplo, qué cambia para ti cuando ocurre. Puedes continuar sin escribir.', note: 'No incluyas datos personales ni de otras personas.' }
+  },
+
+  qacc: {
+    type: 'multi', section: 'Condiciones de uso',
+    title: '¿Qué tendría que permitirte hacer cómodamente?',
+    help: { explain: 'Es voluntario. Solo sirve para que cualquier propuesta tenga en cuenta estos ajustes. No necesitas explicar el motivo.' },
+    options: [
+      { id: 'leer', label: 'Leer con mayor facilidad' },
+      { id: 'escuchar', label: 'Escuchar o disponer de una alternativa al audio' },
+      { id: 'movimientos', label: 'Manejarlo sin depender de movimientos precisos' },
+      { id: 'entender', label: 'Entender instrucciones y pasos con facilidad' },
+      { id: 'apoyo', label: 'Utilizarlo con mis herramientas de apoyo' },
+      { id: 'otra', label: 'Otra necesidad' },
+      { id: 'noespecificar', label: 'Prefiero no especificarlo', exclusive: true }
+    ],
+    extraText: { key: 'detalle', max: 120, label: 'Si quieres, concreta una necesidad (opcional)', showIf: ['leer', 'escuchar', 'movimientos', 'entender', 'apoyo', 'otra'] }
+  },
+
   /* ---------- Preguntas comunes finales ---------- */
   q12: {
     type: 'multi', max: 3, section: 'Condiciones de uso',
