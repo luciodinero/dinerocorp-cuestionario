@@ -194,6 +194,14 @@ header.top { max-width: 44rem; }
 .prev .status { margin-top: 8px; }
 @media (max-width: 560px) { .triad, .kv { grid-template-columns: minmax(0, 1fr); } .triad dd, .kv dd { margin-bottom: 6px; } }
 @media print { .qhelp { display: none; } }
+.hyps { margin: 10px 0 0; }
+.steps { padding-left: 1.3rem; display: grid; gap: 4px; }
+.features li { grid-template-columns: 2rem minmax(0, 1fr); }
+.fn-text { font-weight: 700; }
+.fn-just { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 12px; margin: 4px 0 6px; font-size: .9rem; }
+.fn-just dt { color: var(--muted); }
+.fn-just dd { margin: 0; }
+@media (max-width: 560px) { .fn-just { grid-template-columns: minmax(0, 1fr); } .fn-just dd { margin-bottom: 4px; } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
@@ -374,7 +382,7 @@ DC.TASKS = {
   ],
   P: [
     { id: 'varias', label: 'Elegir entre varias tareas o gestiones pendientes' },
-    { id: 'ambitos', label: 'Ordenar cosas de ámbitos distintos' },
+    { id: 'ambitos', label: 'Ordenar varias cosas pendientes' },
     { id: 'grande', label: 'Empezar algo grande o con muchas partes' },
     { id: 'retomar', label: 'Retomar algo que había dejado a medias' },
     otra()
@@ -742,6 +750,65 @@ DC.QUESTIONS = {
     extraText: { key: 'detalle', max: 120, label: 'Si quieres, concreta una necesidad (opcional)', showIf: ['leer', 'escuchar', 'movimientos', 'entender', 'apoyo', 'otra'] }
   },
 
+  q6o: {
+    route: true, type: 'single', section: 'La tarea concreta',
+    title: '¿Qué estás intentando ordenar principalmente?',
+    options: [
+      { id: 'proyectos', label: 'Tareas de distintos proyectos o actividades' },
+      { id: 'peticiones', label: 'Peticiones de diferentes personas' },
+      { id: 'compromisos', label: 'Compromisos con fechas' },
+      { id: 'trabajopersonal', label: 'Responsabilidades de trabajo y personales' },
+      { id: 'opciones', label: 'Opciones entre las que tengo que decidir' },
+      { id: 'otra', label: 'Otra cosa', textField: { max: 120, label: 'Descríbelo en pocas palabras (opcional)' } },
+      { id: 'nolose', label: 'No lo sé' }
+    ]
+  },
+
+  q7d: {
+    route: true, type: 'single', section: 'Qué lo dificultó',
+    title: 'Cuando dices que la información está dispersa, ¿qué ocurre?',
+    help: { explain: 'Puede estar en mensajes, documentos, papel, aplicaciones o en tu memoria. Son solo ejemplos.' },
+    options: [
+      { id: 'reunir', label: 'Sé dónde está, pero tengo que reunirla para decidir' },
+      { id: 'memoria', label: 'Algunas cosas están anotadas y otras las recuerdo' },
+      { id: 'otrapersona', label: 'Necesito información que tiene otra persona' },
+      { id: 'encontrar', label: 'Me cuesta encontrar lo que necesito' },
+      { id: 'otra', label: 'Me refería a otra cosa', textField: { max: 140, label: 'Descríbelo en pocas palabras (opcional)' } },
+      { id: 'nolose', label: 'No lo sé' }
+    ]
+  },
+
+  q7e: {
+    route: true, type: 'multi', max: 3, section: 'Qué lo dificultó',
+    title: '¿Qué necesitas saber para elegir qué hacer primero?',
+    help: { explain: 'Marca lo que miras o te gustaría tener a la vista. No hay criterios correctos.' },
+    options: [
+      { id: 'fecha', label: 'Cuándo debe estar terminado' },
+      { id: 'consecuencia', label: 'Qué ocurre si lo dejo para después' },
+      { id: 'esfuerzo', label: 'Cuánto tiempo o esfuerzo requiere' },
+      { id: 'esperando', label: 'Si otra persona está esperando' },
+      { id: 'recursos', label: 'Si tengo lo necesario para hacerlo' },
+      { id: 'importancia', label: 'Qué importancia tiene para mí' },
+      { id: 'otra', label: 'Otra cosa' },
+      { id: 'nolose', label: 'No lo sé', exclusive: true }
+    ]
+  },
+
+  q10d: {
+    route: true, type: 'multi', max: 2, section: 'Frecuencia e impacto',
+    title: '¿Qué parte de necesitar esa ayuda te dificulta la tarea?',
+    help: { explain: 'Recibir ayuda no es un problema por sí mismo. Si simplemente colaboráis, indícalo.' },
+    options: [
+      { id: 'esperar', label: 'Tengo que esperar para avanzar' },
+      { id: 'disponible', label: 'La persona no siempre está disponible' },
+      { id: 'recordar', label: 'Necesito que me recuerde cosas' },
+      { id: 'criterio', label: 'Necesito su criterio o conocimientos para decidir' },
+      { id: 'colabora', label: 'No me causa una dificultad; simplemente colaboramos', exclusive: true },
+      { id: 'otra', label: 'Otra' },
+      { id: 'nolose', label: 'No lo sé', exclusive: true }
+    ]
+  },
+
   /* ---------- Preguntas comunes finales ---------- */
   q12: {
     type: 'multi', max: 3, section: 'Condiciones de uso',
@@ -978,8 +1045,13 @@ DC.path = function (a, d) {
     var r = DC.routeObj(d, n), K = function (b) { return DC.K(n, b); };
     add(K('q5')); add(K('q6'));
     if (DC.needsLearnDetail(a, n, r)) add(K('q6b'));
+    if (r.situation === 'P' && DC.RV(a, n, 'q6') === 'ambitos') add(K('q6o'));
     add(K('q7'));
     if (DC.RV(a, n, 'q7') === 'energia') add(K('q7b'));
+    if (DC.RV(a, n, 'q7') === 'dispersa') {
+      add(K('q7d'));
+      if (DC.RV(a, n, 'q7d') === 'reunir') add(K('q7e'));
+    }
     add(K('q8'));
     if (!DC.has(a, K('q8'), 'nointentado')) add(K('q9'), [K('q9'), K('q9b')]);
     if (DC.RV(a, n, 'q9b') === 'sirve') {
@@ -989,6 +1061,7 @@ DC.path = function (a, d) {
     if (DC.scaleRank(DC.val(a, 'q2' + r.situation)) === 0) add(K('q10a'));
     add(K('q10b'));
     if (DC.has(a, K('q10b'), 'tiempo')) add(K('q10c'));
+    if (DC.has(a, K('q10b'), 'ayuda')) add(K('q10d'));
     add(K('q11'));
     if (DC.needsAccess(a, n, r)) add(K('q11c'));
   }
@@ -1261,7 +1334,8 @@ window.DC = window.DC || {};
     moreinfo: 'Obtener más información antes de proponer algo',
     none: 'Ninguna intervención por ahora',
     keep: 'Mantener lo que ya te funciona',
-    complement: 'Mantener lo que te funciona y complementarlo solo si hace falta'
+    complement: 'Mantener lo que te funciona y complementarlo solo si hace falta',
+    trial: 'Se decidirá después de una primera prueba'
   };
 
   /* f: [texto, motivo]  → motivo: task | obstacle | data | review | effort | measure */
@@ -1295,11 +1369,11 @@ window.DC = window.DC || {};
       otra: { idea: 'Una lista única de pendientes de esa tarea, con lo siguiente visible.', f: [['Lista única de pendientes', 'task'], ['Lo siguiente, visible', 'obstacle']] }
     },
     P: {
-      varias: { idea: 'Unos criterios sencillos, como fecha límite y esfuerzo, para ordenar tus tareas y ver cuál va primero, con la decisión final en tus manos.', f: [['Valorar cada tarea con dos criterios que eliges tú', 'task'], ['Orden sugerido que puedes cambiar', 'review'], ['Mostrar solo la siguiente tarea', 'obstacle']] },
-      ambitos: { idea: 'Una vista que reúna tareas de ámbitos distintos y te deje marcar cuál va primero según criterios que tú eliges.', f: [['Tareas de distintos ámbitos en una sola lista', 'task'], ['Criterios de prioridad propios', 'obstacle'], ['Orden final decidido por ti', 'review']] },
+      varias: { idea: 'Una lista con los pendientes entre los que eliges y, junto a cada uno, solo los datos que tú necesitas para decidir.', f: [['Ver juntos los pendientes entre los que eliges', 'task'], ['Decidir tú el orden y poder cambiarlo', 'review']] },
+      ambitos: { idea: 'Una vista con lo que intentas ordenar, mostrando solo los datos que te ayudan a decidir.', f: [['Reunir en un sitio lo que intentas ordenar', 'task'], ['Decidir tú el orden y poder cambiarlo', 'review']] },
       grande: { idea: 'Una guía para dividir algo grande en pasos cortos y dejar visible solo el primero.', f: [['Dividir la tarea en pasos cortos', 'task'], ['Mostrar solo el primer paso pendiente', 'obstacle'], ['Marcar pasos hechos', 'measure']] },
       retomar: { idea: 'Una nota del punto donde lo dejaste y del siguiente paso, para retomarlo sin reconstruir dónde estabas.', f: [['Nota del último avance', 'task'], ['Siguiente paso visible al volver', 'obstacle']] },
-      otra: { idea: 'Unos criterios sencillos para decidir por dónde empezar, con la decisión final en tus manos.', f: [['Criterios propios para ordenar', 'task'], ['Siguiente tarea visible', 'obstacle']] }
+      otra: { idea: 'Ver juntas las cosas entre las que eliges, con los datos que necesitas para decidir.', f: [['Ver juntas las opciones', 'task']] }
     },
     E: {
       compras: { idea: 'Una tabla de comparación con los criterios que te importan en filas y las opciones en columnas.', f: [['Definir tus criterios una vez', 'task'], ['Añadir opciones y rellenar sus datos', 'obstacle'], ['Anotar el origen y la fecha de cada dato', 'data']] },
@@ -1330,29 +1404,29 @@ window.DC = window.DC || {};
   /* Bloqueo de energía o ganas: solo algunos casos justifican una ayuda */
   var ENERGY = {
     grande: { idea: 'Una guía para dividir la tarea en pasos cortos y dejar visible solo el primero, para que empezar cueste menos.', f: [['Dividir la tarea en pasos cortos', 'task'], ['Mostrar solo el primer paso', 'obstacle'], ['Marcar pasos hechos', 'measure']] },
-    varias: { idea: 'Unos criterios sencillos para decidir qué hacer primero entre varias cosas, con la decisión final en tus manos.', f: [['Valorar cada tarea con dos criterios que eliges tú', 'task'], ['Mostrar solo la siguiente', 'obstacle'], ['Cambiar el orden cuando quieras', 'review']] },
+    varias: { idea: 'Ver juntas las cosas entre las que eliges, con los datos que necesitas para decidir, y decidir tú el orden.', f: [['Ver juntas las opciones entre las que eliges', 'obstacle'], ['Decidir tú el orden y poder cambiarlo', 'review']] },
     siguiente: { idea: 'Instrucciones concretas del siguiente paso, escritas cuando lo tienes claro, para encontrarlas cuando vuelvas a la tarea.', f: [['Escribir el siguiente paso en una línea', 'task'], ['Verlo nada más volver a la tarea', 'obstacle'], ['Marcarlo como hecho', 'measure']] }
   };
 
   var MEASURES = {
-    A: 'La próxima vez que necesites esa información, comprueba si la encuentras en el primer sitio que miras.',
-    B: 'Haz la tarea una vez con la ayuda y compara los pasos repetidos con la última vez.',
-    C: 'En la próxima actividad, compara cuántos mensajes hacen falta para cerrar el acuerdo con la anterior.',
-    D: 'La próxima vez que revises tus pendientes, comprueba si los tienes todos sin reconstruirlos de varios sitios.',
-    P: 'La próxima vez que tengas varias cosas, comprueba si eliges por dónde empezar con menos vueltas que la anterior.',
-    E: 'En la próxima decisión, comprueba si puedes elegir sin volver a buscar información que ya habías visto.',
-    F: 'La próxima vez que quieras avanzar, comprueba si consigues empezar o retomarla, y en qué paso te quedas.',
-    G: 'Pruébalo con un solo material y compara con la vez anterior si encuentras o repasas lo que necesitas con menos esfuerzo.'
+    A: 'Encontrar la información necesaria sin repetir búsquedas.',
+    B: 'Completar la tarea con menos pasos repetidos que la última vez.',
+    C: 'Cerrar el acuerdo con menos mensajes que en la actividad anterior.',
+    D: 'Tener localizados todos los pendientes sin reconstruirlos de memoria.',
+    P: 'Identificar un siguiente paso y explicar por qué.',
+    E: 'Decidir sin volver a buscar información que ya habías visto.',
+    F: 'Identificar el siguiente paso de la actividad y llegar a darlo.',
+    G: 'Encontrar o repasar lo que necesitas de un material sin recorrerlo entero.'
   };
 
   var PENDING_Q = {
-    A: '¿Qué necesitas encontrar y dónde lo buscas ahora?',
-    B: '¿Qué pasos o datos repites y en qué sitios?',
-    C: '¿Con quién te coordinas y qué cuesta acordar?',
-    D: '¿Qué pendientes se te olvidan y dónde los anotas ahora?',
-    P: 'Cuando te cuesta elegir por dónde empezar, ¿qué te pasa exactamente?',
+    A: '¿Qué necesitas encontrar y dónde suele estar?',
+    B: '¿Qué pasos o datos se repiten y en qué sitios?',
+    C: '¿Con quién te coordinas y qué es lo que lleva más mensajes acordar?',
+    D: '¿Te cuesta recordarlos, encontrarlos o ambas cosas?',
+    P: 'Cuando eliges por dónde empezar, ¿qué necesitas saber de cada cosa?',
     E: '¿Qué comparas y qué información vuelves a revisar?',
-    F: '¿Qué actividad quieres avanzar y en qué paso te quedas?',
+    F: '¿Qué actividad quieres avanzar y en qué punto se queda?',
     G: 'Al aprender con esos materiales, ¿qué parte te cuesta más: tomar apuntes, encontrar otra vez una parte concreta, identificar las ideas principales o preparar el repaso?'
   };
 
@@ -1404,13 +1478,27 @@ window.DC = window.DC || {};
     s.energyBehavior = val(a, K('q7c'));
     s.energySkipped = s.energyAmbiguous && !s.energyBehavior;
 
+    s.disp = s.obstacle === 'dispersa' ? val(a, K('q7d')) : null;
+    s.dispUnknown = s.obstacle === 'dispersa' && (!s.disp || s.disp === 'nolose' || (s.disp === 'otra' && !DC.text(a, K('q7d'), 'otra')));
+    var crit = val(a, K('q7e')) || [];
+    s.criteriaNolose = crit.indexOf('nolose') !== -1;
+    s.criteria = crit.filter(function (x) { return x !== 'nolose' && x !== 'otra'; });
+    s.orderWhat = val(a, K('q6o'));
+    var hd = val(a, K('q10d')) || [];
+    s.collab = hd.indexOf('colabora') !== -1;
+    s.helpDep = hd.filter(function (x) { return ['esperar', 'disponible', 'recordar', 'criterio'].indexOf(x) !== -1; });
+    s.helpConsequence = has(a, K('q10b'), 'ayuda') && !s.collab;
+    var relSet = s.collab ? RELEVANT.filter(function (x) { return x !== 'ayuda'; }) : RELEVANT;
+    var q10list = val(a, K('q10b')) || [];
+    var onlyCollab = s.collab && q10list.length > 0 && q10list.every(function (x) { return x === 'ayuda'; });
     var c1 = DC.clarification(a, n, 'c_metodo'), c2 = DC.clarification(a, n, 'c_consecuencia'), c3 = DC.clarification(a, n, 'c_cambio');
     s.unresolved = DC.contradictions(a, d, n).filter(function (c) { var v = DC.clarification(a, n, c.id); return !v || v === 'nodecir'; });
     s.consText = val(a, K('qconsec')) || '';
     var consContradiction = DC.contradictions(a, d, n).some(function (c) { return c.id === 'c_consecuencia'; });
     if (c2 === 'relevante') { s.consState = s.consText ? 'identificadas' : 'sindescribir'; s.relevant = true; s.consClarified = true; }
     else if (c2 === 'norelevante') { s.consState = 'ninguna'; s.relevant = false; }
-    else if (hasAny(a, K('q10b'), RELEVANT)) { s.consState = 'identificadas'; s.relevant = true; }
+    else if (onlyCollab) { s.consState = 'ninguna'; s.relevant = false; s.collabOnly = true; }
+    else if (hasAny(a, K('q10b'), relSet)) { s.consState = 'identificadas'; s.relevant = true; }
     else if (has(a, K('q10b'), 'ninguna')) {
       if (consContradiction) { s.consState = 'noseguro'; s.relevant = null; }
       else { s.consState = 'ninguna'; s.relevant = false; }
@@ -1443,34 +1531,132 @@ window.DC = window.DC || {};
     return s;
   }
 
-  function whyText(kind, a, d, s) {
+  /* ---------- Funciones justificadas una a una ----------
+     Cada función lleva: en qué respuesta se basa, qué dificultad pretende
+     aliviar y qué falta comprobar. Solo se incluyen funciones con una
+     relación explícita con la evidencia. */
+  function fnFromKind(text, kind, a, d, s) {
+    var K = s.K;
     switch (kind) {
-      case 'task': return 'Responde a la tarea que has indicado.';
+      case 'task':
+        if (!s.task || s.taskVague) return null;
+        return { text: text, evidence: 'Tarea: ' + lc(DC.labelOf(K('q6'), s.task, a, d)) + '.', relieves: 'La parte de la tarea que indicaste.', check: 'Que encaje con cómo haces la tarea ahora.' };
       case 'obstacle':
-        if (s.energy && ENERGY[s.energy]) return 'Responde a lo que indicaste: ' + lc(DC.labelOf(s.K('q7b'), s.energy, a, d)) + '.';
-        return s.obstacle && ['dispersa', 'manual', 'claro', 'herramienta', 'tercero'].indexOf(s.obstacle) !== -1
-          ? 'Responde al obstáculo: ' + lc(DC.labelOf(s.K('q7'), s.obstacle, a, d)) + '.' : 'Reduce los pasos de la tarea.';
-      case 'data': return 'Permite comprobar de dónde sale cada dato.';
-      case 'review': return has(a, 'q12', 'revisar') ? 'Indicaste que necesitas revisar y confirmar lo que hace.' : 'Deja la decisión final en tus manos.';
-      case 'effort': return has(a, 'q12', 'pococonfig') ? 'Indicaste que debe requerir poca configuración.' : 'Busca el menor esfuerzo de uso.';
-      case 'measure': return 'Permite ver si la ayuda funciona.';
+        if (s.energy && ENERGY[s.energy]) return { text: text, evidence: 'Lo que te pasaba: ' + lc(DC.labelOf(K('q7b'), s.energy, a, d)) + '.', relieves: 'Ese bloqueo al empezar.', check: 'Que en la prueba te ayude a empezar.' };
+        if (!s.obstacle || ['manual', 'claro', 'herramienta', 'dispersa', 'tiempo'].indexOf(s.obstacle) === -1) return null;
+        return { text: text, evidence: 'Obstáculo: ' + lc(DC.labelOf(K('q7'), s.obstacle, a, d)) + '.', relieves: 'Ese obstáculo.', check: 'Que en la prueba lo reduzca de verdad.' };
+      case 'review':
+        if (!has(a, 'q12', 'revisar')) return null;
+        return { text: text, evidence: 'Condición: permitir revisar y confirmar lo que hace.', relieves: 'Usar un resultado sin poder revisarlo.', check: 'Que revisar no añada pasos innecesarios.' };
+      case 'effort':
+        if (!has(a, 'q12', 'pococonfig')) return null;
+        return { text: text, evidence: 'Condición: requerir poca configuración.', relieves: 'El esfuerzo de usarla.', check: 'Que añadir datos cueste poco.' };
+      case 'data':
+        if (!val(a, K('q11')) || s.matsUnknown) return null;
+        return { text: text, evidence: 'Materiales: ' + val(a, K('q11')).map(function (x) { return lc(DC.labelOf(K('q11'), x, a, d)); }).join(', ') + '.', relieves: 'No saber de dónde sale cada dato.', check: 'Que esas fuentes sean accesibles.' };
     }
-    return '';
+    return null;
+  }
+  function entryFns(entry, a, d, s) {
+    if (!entry) return [];
+    return entry.f.map(function (x) { return fnFromKind(x[0], x[1], a, d, s); }).filter(Boolean).slice(0, 3);
   }
 
   function chooseFormat(entry, a, s) {
-    if (s.obstacle === 'herramienta' || entry.existingFirst) return 'existing';
+    if (s.obstacle === 'herramienta' || (entry && entry.existingFirst)) return 'existing';
     if (has(a, 'q12', 'encaje') || (s.usesApp && ['esfuerzo', 'parte'].indexOf(val(a, s.K('q9'))) !== -1)) return 'feature';
     if (has(a, 'q12', 'movil') && !has(a, 'q12', 'ordenador') && s.frequent) return 'app';
     return 'web';
   }
 
   var INSUF_ENERGY = 'No tenemos información suficiente para proponer una ayuda tecnológica para esta dificultad.';
+  var Q_SOURCES = '¿Dónde está ahora esa información: en mensajes, documentos, papel, aplicaciones o en tu memoria?';
+
+  /* ---------- Hipótesis: recuperar, reunir, capturar, decidir, esperar, experto ----------
+     Son hipótesis condicionadas por las respuestas, no recomendaciones automáticas. */
+  var HYP = {
+    recuperar: { label: 'Recuperar información', idea: 'Una forma de localizar lo que necesitas (un índice o un buscador), si las fuentes son accesibles.', when: 'si te cuesta encontrar lo que necesitas',
+      measure: 'Encontrar la información necesaria sin repetir búsquedas.', fields: ['qué es', 'dónde está'] },
+    reunir: { label: 'Reunir información', idea: 'Una vista que reúna la información que necesitas, conservando de dónde sale cada dato.', when: 'si sabes dónde está la información, pero tienes que reunirla para decidir',
+      measure: 'Tener a la vista lo necesario y detectar qué dato falta para decidir.', fields: ['dato', 'de dónde sale'] },
+    capturar: { label: 'Capturar pendientes', idea: 'Una bandeja de entrada sencilla para anotar cada pendiente en cuanto aparece, si anotarlo cuesta poco.', when: 'si parte de lo pendiente solo está en tu memoria',
+      measure: 'Comprobar que los pendientes nuevos quedan anotados sin depender de recordarlos.', fields: ['pendiente', 'de dónde viene'] },
+    decidir: { label: 'Decidir entre pendientes', idea: 'Mostrar junto a cada pendiente los datos que tú necesitas para decidir, sin imponer criterios.', when: 'si lo que falta es saber qué hacer primero',
+      measure: 'Identificar un siguiente paso y explicar por qué.' },
+    esperar: { label: 'Esperar información o acciones', idea: 'Una vista de asuntos bloqueados: qué falta y de quién depende.', when: 'si dependes de que otra persona te dé información o haga algo',
+      measure: 'Saber qué asunto está bloqueado y por quién.', fields: ['qué falta', 'de quién depende'] },
+    experto: { label: 'Necesitar el criterio de otra persona', idea: 'Facilitar la preparación de la consulta: reunir antes la información que esa persona necesita para darte su criterio. No sustituye sus conocimientos.', when: 'si necesitas el criterio o los conocimientos de otra persona',
+      measure: 'Llegar a la consulta con lo necesario y salir con una decisión, sin tener que repetirla.', fields: ['qué hay que decidir', 'qué necesita ver esa persona'] }
+  };
+
+  function hypotheses(a, d, s) {
+    var ids = [], K = s.K;
+    function add(id) { if (ids.indexOf(id) === -1) ids.push(id); }
+    if (s.obstacle === 'dispersa' && !s.dispUnknown) {
+      if (s.disp === 'encontrar') add('recuperar');
+      if (s.disp === 'reunir') { add('reunir'); if (['P', 'E', 'D'].indexOf(s.situation) !== -1 || s.criteria.length) add('decidir'); }
+      if (s.disp === 'memoria') add('capturar');
+      if (s.disp === 'otrapersona') add('esperar');
+      if (s.disp === 'otra') { /* descrito con texto: se muestra como evidencia, sin hipótesis automática */ }
+    }
+    if (s.obstacle === 'tercero') add('esperar');
+    if (hasAny(a, K('q10d'), ['esperar', 'disponible'])) add('esperar');
+    if (has(a, K('q10d'), 'recordar')) add('capturar');
+    if (has(a, K('q10d'), 'criterio')) add('experto');
+    if (s.situation === 'P' && s.criteria.length) add('decidir');
+    return ids;
+  }
+
+  /* Interpretaciones posibles cuando todavía no sabemos qué significa «dispersa» */
+  function candidateHyps(a, d, s) {
+    var ids = ['reunir'];
+    if (['P', 'E', 'D'].indexOf(s.situation) !== -1) ids.push('decidir');
+    if (s.helpConsequence || s.obstacle === 'tercero') ids.push('esperar');
+    if (s.situation === 'A') ids.unshift('recuperar');
+    if (s.situation === 'D') ids.push('capturar');
+    return ids;
+  }
+
+  function hypFn(id, a, d, s) {
+    var K = s.K, h = HYP[id];
+    var lbl = function (k, v) { return lc(DC.labelOf(K(k), v, a, d)); };
+    switch (id) {
+      case 'recuperar': return { text: 'Un índice de dónde está cada cosa que necesitas, con búsqueda por palabra.', evidence: 'Sobre la dispersión indicaste: ' + lbl('q7d', 'encontrar') + '.', relieves: 'Tener que buscar lo que necesitas en varios sitios.', check: 'Que las fuentes sean accesibles para localizarlas o buscar en ellas.' };
+      case 'reunir': return { text: 'Una vista con la información que necesitas para decidir, indicando de dónde sale cada dato.', evidence: 'Sobre la dispersión indicaste: ' + lbl('q7d', 'reunir') + '.', relieves: 'Tener que reunir la información cada vez que decides.', check: 'Qué información exacta hay que reunir y si se puede consultar donde está.' };
+      case 'capturar': return { text: 'Una bandeja sencilla donde anotar cada pendiente en cuanto aparece.', evidence: s.disp === 'memoria' ? 'Sobre la dispersión indicaste: ' + lbl('q7d', 'memoria') + '.' : 'Sobre la ayuda que necesitas: ' + lbl('q10d', 'recordar') + '.', relieves: 'Depender de recordar lo que no está anotado.', check: 'Que anotar cada pendiente te cueste menos que recordarlo.' };
+      case 'decidir':
+        if (!s.criteria.length) return null;
+        return { text: 'Mostrar junto a cada pendiente solo estos datos: ' + s.criteria.map(function (x) { return lbl('q7e', x); }).join('; ') + '.', evidence: 'Indicaste que para elegir qué hacer primero necesitas saber eso.', relieves: 'Elegir sin tener a la vista lo que necesitas saber.', check: 'Que esos datos estén disponibles y que con ellos puedas elegir y explicar tu elección.' };
+      case 'esperar': return { text: 'Una lista de asuntos bloqueados: qué falta y de quién depende.', evidence: s.disp === 'otrapersona' ? 'Sobre la dispersión indicaste: ' + lbl('q7d', 'otrapersona') + '.' : hasAny(a, K('q10d'), ['esperar', 'disponible']) ? 'Sobre la ayuda que necesitas: ' + val(a, K('q10d')).filter(function (x) { return x === 'esperar' || x === 'disponible'; }).map(function (x) { return lbl('q10d', x); }).join('; ') + '.' : 'Obstáculo: dependía de una respuesta o acción de otra persona.', relieves: 'No saber qué está pendiente de otra persona.', check: 'Que puedas actualizarla cuando algo cambie, sin depender de la otra persona.' };
+      case 'experto': return { text: 'Una nota para preparar la consulta: qué necesitas decidir y qué información tendría que ver esa persona.', evidence: 'Sobre la ayuda que necesitas: ' + lbl('q10d', 'criterio') + '.', relieves: 'Llegar a la consulta sin lo necesario y tener que repetirla.', check: 'No sustituye su criterio ni sus conocimientos; solo prepara la consulta.' };
+    }
+    return null;
+  }
+
+  /* Huecos: cada uno con su motivo y la pregunta que lo resolvería.
+     El primero define el estado provisional y la pregunta pendiente. */
+  function engineGaps(a, d, s, ids) {
+    var g = [], K = s.K;
+    if (s.obstacle === 'dispersa' && s.dispUnknown) g.push({ core: true, reason: 'Todavía no sabemos qué significa en tu caso que la información esté dispersa.',
+      q: s.disp === 'nolose' ? 'La última vez que tuviste que elegir, ¿qué información te faltaba y dónde estaba?' : s.disp === 'otra' ? 'Si puedes, describe en una frase qué ocurre cuando dices que la información está dispersa.'
+        : 'Cuando dices que la información está dispersa, ¿qué ocurre: sabes dónde está y tienes que reunirla, no todo está anotado, la tiene otra persona o te cuesta encontrarla?' });
+    if (s.situation === 'P' && s.task === 'ambitos' && (!s.orderWhat || s.orderWhat === 'nolose' || (s.orderWhat === 'otra' && !DC.text(a, K('q6o'), 'otra')))) g.push({ core: true, reason: 'Todavía no sabemos qué intentas ordenar.',
+      q: s.orderWhat === 'nolose' ? 'La última vez, ¿entre qué cosas tenías que elegir?' : '¿Qué estás intentando ordenar principalmente: tareas de distintos proyectos, peticiones de otras personas, compromisos con fechas u otra cosa?' });
+    if (s.helpConsequence && !val(a, K('q10d'))) g.push({ reason: 'No sabemos si necesitar ayuda te supone una dificultad o es colaboración normal.', q: '¿Qué parte de necesitar esa ayuda te dificulta la tarea, si alguna?' });
+    if (has(a, K('q10d'), 'nolose')) g.push({ reason: 'No sabemos qué parte de necesitar ayuda te dificulta la tarea.', q: 'La última vez que necesitaste esa ayuda, ¿qué pasó mientras tanto?' });
+    if (ids.indexOf('reunir') !== -1 && !s.criteria.length) g.push({ core: false, reason: 'No sabemos qué información necesitas tener reunida.', q: s.criteriaNolose ? 'La última vez que elegiste, ¿qué miraste antes de decidir?' : '¿Qué información necesitas tener reunida para decidir?' });
+    if (ids.indexOf('decidir') !== -1 && !s.criteria.length && ids.indexOf('reunir') === -1) g.push({ reason: 'No sabemos qué datos necesitas para elegir qué hacer primero.', q: s.criteriaNolose ? 'La última vez que elegiste, ¿por qué empezaste por esa?' : '¿Qué necesitas saber de cada cosa para elegir qué hacer primero?' });
+    if (ids.indexOf('esperar') !== -1) g.push({ reason: 'No sabemos qué necesitas exactamente de la otra persona.', q: '¿Qué necesitas exactamente de esa persona para avanzar?' });
+    if (s.matsUnknown || s.access === 'nolose') g.push({ reason: 'No sabemos dónde está la información que habría que usar.', q: Q_SOURCES });
+    else if (s.accessRelevant && ['propios'].indexOf(s.access) === -1) g.push({ reason: 'No sabemos si se puede usar la información donde está ahora.',
+      q: s.videos ? '¿Puedes usar esas grabaciones fuera de donde las ves ahora, por ejemplo guardarlas o pausarlas para tomar notas?' : '¿Puedes usar esos materiales fuera del sitio donde están ahora, por ejemplo copiarlos o guardarlos?' });
+    return g;
+  }
 
   function baseDecision(a, d, s) {
     var sitCat = CATALOG[s.situation] || {};
     var entry = sitCat[s.task] || sitCat.otra;
-    var r = { entry: entry, format: null, test: false, hyp: null };
+    var r = { entry: entry, format: null, test: false, hyp: null, gaps: [], fns: [] };
     var described = function (lvl) { return s.relevant === true ? 'sindescribir' : lvl; };
 
     if (s.works && s.relevant !== true) {
@@ -1506,19 +1692,21 @@ window.DC = window.DC || {};
         r.text = INSUF_ENERGY;
         if (s.energyAmbiguous && (s.situation === 'P' || s.situation === 'D')) {
           r.hyp = s.situation === 'P'
-            ? 'Si la dificultad era elegir entre varias tareas, unos criterios sencillos de prioridad podrían ayudar. Falta confirmarlo.'
+            ? 'Si la dificultad era elegir entre varias tareas, tener a la vista lo que necesitas saber de cada una podría ayudar. Falta confirmarlo.'
             : 'Si la dificultad era no tener los pendientes a la vista, una lista única podría ayudar. Falta confirmarlo.';
         }
-        r.reason = s.energyAmbiguous ? 'No sabemos qué pasaba exactamente cuando te faltaban energía o ganas.' : 'La falta de energía o interés, sin más información, no justifica una propuesta de software.';
+        r.reason = s.energyAmbiguous ? (s.consState === 'sindescribir' ? 'Sabemos que hay consecuencias relevantes, pero todavía no cuáles, ni qué pasaba cuando te faltaban energía o ganas.' : 'No sabemos qué pasaba exactamente cuando te faltaban energía o ganas.') : 'La falta de energía o interés, sin más información, no justifica una propuesta de software.';
         return r;
       }
     }
     if (s.obstacle === 'tiempo' || s.obstacle === 'recursos') {
       var supported = s.obstacle === 'tiempo' && s.relevant === true && entry && !s.taskVague && ['A', 'B', 'D', 'G'].indexOf(s.situation) !== -1 && !s.works;
       if (supported) {
-        r.level = 'plausible'; r.format = chooseFormat(entry, a, s); r.test = true;
+        r.level = 'plausible'; r.format = 'trial'; r.orient = chooseFormat(entry, a, s); r.test = true;
+        r.fns = entryFns(entry, a, d, s);
         r.text = 'Una herramienta no te dará más tiempo. Como ayuda limitada, se podría acortar algún paso de la tarea: ' + lc(entry.idea);
         r.reason = 'El freno principal es el tiempo, y no sabemos cuánto se va en pasos que una herramienta pueda acortar.';
+        r.gaps = [{ reason: r.reason, q: 'De lo que te lleva esta tarea, ¿qué paso es el que más tiempo se come?' }];
         return r;
       }
       r.level = 'insuficiente'; r.format = 'process';
@@ -1528,16 +1716,12 @@ window.DC = window.DC || {};
       r.reason = 'El obstáculo principal no es algo que una herramienta pueda resolver por sí sola.';
       return r;
     }
-    if (s.obstacle === 'tercero') {
-      if (s.situation === 'C' && entry) {
-        r.level = 'plausible'; r.format = chooseFormat(entry, a, s); r.test = true;
-        r.text = entry.idea + ' Puede reducir los mensajes necesarios, pero no garantiza que las demás personas respondan.';
-        r.reason = 'El resultado depende de que otras personas participen.';
-        return r;
-      }
-      r.level = 'plausible'; r.format = 'process';
-      r.text = 'La tarea depende de la respuesta de otra persona. Puede ayudar más acordar con ella un canal y un plazo de respuesta que añadir una herramienta.';
-      r.reason = 'El obstáculo está en la respuesta de otras personas, no en la herramienta.';
+    if (s.obstacle === 'tercero' && s.situation === 'C' && entry) {
+      r.level = 'plausible'; r.format = 'trial'; r.orient = chooseFormat(entry, a, s); r.test = true;
+      r.fns = entryFns(entry, a, d, s);
+      r.text = entry.idea + ' Puede reducir los mensajes necesarios, pero no garantiza que las demás personas respondan.';
+      r.reason = 'El resultado depende de que otras personas participen.';
+      r.gaps = [{ reason: r.reason, q: '¿Qué necesitas exactamente de esas personas para cerrar el acuerdo?' }];
       return r;
     }
     if (s.obstacle === 'ninguno') {
@@ -1546,23 +1730,53 @@ window.DC = window.DC || {};
       r.reason = 'Falta saber en qué paso de la tarea está la dificultad.';
       return r;
     }
-    r.format = chooseFormat(entry, a, s); r.test = true;
+
+    /* Información dispersa, dependencia de otra persona o necesidad de ayuda */
+    if (s.obstacle === 'dispersa' || s.obstacle === 'tercero' || s.helpDep.length) {
+      var ids = hypotheses(a, d, s);
+      r.gaps = engineGaps(a, d, s, ids);
+      r.format = 'trial'; r.orient = 'web';
+      if (s.obstacle === 'dispersa' && s.dispUnknown) {
+        r.candidates = candidateHyps(a, d, s).map(function (id) { return { label: HYP[id].label, idea: HYP[id].idea, when: HYP[id].when }; });
+        r.extraIds = ids.filter(function (id) { return HYP[id]; });
+        r.text = 'Todavía no sabemos qué significa en tu caso que la información esté dispersa. Según lo que signifique, la ayuda sería distinta, así que no proponemos una función concreta todavía.';
+      } else if (s.obstacle === 'dispersa' && s.disp === 'otra' && !ids.length) {
+        r.text = 'Has descrito la dispersión con tus palabras. No la interpretamos de forma automática; antes de proponer algo conviene comentarla.';
+      } else {
+        r.text = ids.length ? 'Hipótesis según tus respuestas, para comprobar con una prueba sencilla:' : 'Con lo que sabemos no podemos proponer una función concreta todavía.';
+      }
+      r.hyps = (r.candidates ? (r.extraIds || []).filter(function (id) { return id === 'experto' || id === 'capturar'; }) : ids).map(function (id) {
+        return { id: id, label: HYP[id].label, idea: HYP[id].idea, measure: HYP[id].measure, fields: HYP[id].fields };
+      });
+      r.fns = r.hyps.map(function (h) { return hypFn(h.id, a, d, s); }).filter(Boolean).slice(0, 3);
+      if (ids.indexOf('decidir') !== -1 && s.criteria.length) r.hyps.forEach(function (h) { if (h.id === 'decidir') h.fields = s.criteria.map(function (x) { return lc(DC.labelOf(s.K('q7e'), x, a, d)); }); });
+      r.test = r.fns.length > 0 && !r.gaps.some(function (g) { return g.core; });
+      if (s.consState === 'sindescribir') r.gaps.unshift({ reason: 'Todavía no sabemos cuáles son las consecuencias.', q: 'La última vez que ocurrió, ¿qué cambió para ti por no poder hacerlo como querías?' });
+      r.level = r.gaps.length || !r.fns.length ? 'plausible' : 'ok';
+      r.reason = r.gaps.length ? 'Es provisional: ' + lc(r.gaps[0].reason) : (r.fns.length ? 'La necesidad, lo que la dificulta y los datos que hay que tener a la vista están definidos.' : 'Faltan datos para concretar la ayuda.');
+      return r;
+    }
+
+    /* Resto: propuesta del catálogo, con funciones justificadas */
+    r.format = 'trial'; r.orient = chooseFormat(entry, a, s); r.test = true;
     r.text = entry.idea;
-    if (r.format === 'existing') r.text += s.obstacle === 'herramienta'
+    if (r.orient === 'existing') r.text += s.obstacle === 'herramienta'
       ? ' Como la herramienta actual es parte del problema, el primer paso sería comprobar si permite hacerlo de otra forma o si otra existente lo resuelve.'
       : ' Ya existen herramientas habituales que hacen algo parecido; conviene probar alguna antes de construir nada.';
-    var missing = [];
-    if (s.taskVague) missing.push('la tarea concreta');
-    if (s.obstacleVague) missing.push('qué dificulta la tarea');
-    if (s.consState === 'sindescribir') missing.push('cuáles son las consecuencias');
-    else if (s.relevant !== true) missing.push('qué consecuencia tiene');
-    if (s.matsUnknown) missing.push('qué materiales se usan');
-    if (s.accessRelevant && (!s.access || s.access === 'nolose' || s.access === 'otrapersona')) missing.push('si se puede acceder a los materiales');
-    if (s.unresolved.length) missing.push('una aparente contradicción en tus respuestas');
-    if (d.uncertain && s.n === 1) missing.push('si esta situación es la que más te importa');
-    if (missing.length) { r.level = 'plausible'; r.reason = 'Falta confirmar ' + missing.slice(0, 2).join(' y ') + '.'; }
-    else { r.level = 'ok'; r.reason = 'La tarea, el obstáculo y sus consecuencias están definidos.'; }
-    if (s.taskVague) r.test = false;
+    r.fns = entryFns(entry, a, d, s);
+    var g = [];
+    if (s.consState === 'sindescribir') g.push({ reason: 'Todavía no sabemos cuáles son las consecuencias.', q: 'La última vez que ocurrió, ¿qué cambió para ti por no poder hacerlo como querías?' });
+    if (s.taskVague) g.push({ core: true, reason: 'Todavía no sabemos con precisión la tarea.', q: (s.learn === 'nolose' || s.task === 'nolose') ? 'Piensa en la última vez: ¿qué tenías delante y qué querías conseguir?' : '¿Qué intentabas hacer exactamente la última vez que te ocurrió?' });
+    if (s.obstacleVague) g.push({ core: true, reason: 'Todavía no sabemos qué dificulta la tarea.', q: s.obstacle === 'nolose' ? 'La última vez, ¿en qué momento concreto dejaste de avanzar?' : 'La última vez que ocurrió, ¿en qué paso concreto te quedaste parado/a o perdiste más tiempo?' });
+    if (s.relevant !== true) g.push({ reason: 'Todavía no está claro qué consecuencia tiene.', q: has(a, s.K('q10b'), 'nolose') ? 'La última vez que salió peor de lo que querías, ¿qué pasó después?' : '¿Qué pasa cuando esta tarea sale mal o tarda más de la cuenta?' });
+    if (s.matsUnknown) g.push({ reason: 'No sabemos qué materiales o información se usan.', q: Q_SOURCES });
+    if (s.accessRelevant && (!s.access || s.access === 'nolose' || s.access === 'otrapersona')) g.push({ reason: 'No sabemos si se puede acceder a los materiales.', q: s.videos ? '¿Puedes usar esas grabaciones fuera de donde las ves ahora, por ejemplo guardarlas o pausarlas para tomar notas?' : '¿Puedes usar esos materiales fuera del sitio donde están ahora, por ejemplo copiarlos o guardarlos?' });
+    if (s.unresolved.length) g.push({ reason: 'Hay una aparente contradicción en tus respuestas.', q: 'Tu forma actual de hacerlo, ¿te resuelve la tarea por completo o solo en parte?' });
+    if (d.uncertain && s.n === 1) g.push({ reason: 'No estabas seguro/a de que esta situación te causara una dificultad.', q: 'Si pudieras facilitar solo una cosa de esta tarea, ¿cuál sería?' });
+    r.gaps = g;
+    r.level = g.length || !r.fns.length ? 'plausible' : 'ok';
+    r.reason = g.length ? 'Es provisional: ' + lc(g[0].reason) : 'La tarea, el obstáculo y sus consecuencias están definidos.';
+    if (s.taskVague || !r.fns.length || g.some(function (x) { return x.core; })) r.test = false;
     return r;
   }
 
@@ -1573,24 +1787,46 @@ window.DC = window.DC || {};
     if (!s.improved) return r;
     var helped = s.helpedUnknown ? 'la mejora que probaste' : 'lo que te ayudó (' + s.helped.map(function (x) { return lc(DC.labelOf(s.K('q9c'), x, a, d)); }).join(', ') + ')';
     if (s.remaining === false) {
-      return { level: 'actual', format: 'keep', test: false, entry: null,
+      return { level: 'actual', format: 'keep', test: false, entry: null, fns: [], gaps: [],
         text: 'La mejora que probaste te funciona suficientemente bien ahora. Lo razonable es mantener ' + helped + '; no proponemos una herramienta nueva.',
         reason: 'Indicaste que, con esa mejora, ahora te funciona suficientemente bien.' };
     }
     var keep = 'Mantén ' + helped + ', porque te ha servido.';
-    if (s.remaining === true && !s.remainingUnknown && (r.level === 'ok' || r.level === 'plausible')) {
-      var cat = CATALOG[s.situation] || {};
-      var e2 = cat[s.remainingTask] || r.entry;
-      return { level: 'plausible', format: 'complement', test: true, entry: e2, hyp: r.hyp,
+    var cat = CATALOG[s.situation] || {};
+    var e2 = cat[s.remainingTask] || r.entry;
+    if (s.remaining === true && !s.remainingUnknown && (r.level === 'ok' || r.level === 'plausible') && e2 && !r.hyps) {
+      var fns = entryFns(e2, a, d, s);
+      return { level: 'plausible', format: 'complement', test: fns.length > 0, entry: e2, hyp: r.hyp, fns: fns,
+        gaps: [{ reason: 'Falta comprobar que el complemento aporta algo en lo que queda.', q: 'En lo que todavía queda por facilitar, ¿qué paso concreto te cuesta?' }],
         text: keep + ' Para lo que queda, se podría complementar con esto: ' + lc(e2.idea),
-        reason: 'Ya tienes una mejora que funciona; falta comprobar que el complemento aporta algo en lo que queda.' };
+        reason: 'Es provisional: falta comprobar que el complemento aporta algo en lo que queda.' };
     }
     r.text = keep + ' ' + r.text;
     if (r.level === 'ok' || r.level === 'plausible') {
       r.level = 'plausible'; r.test = false; r.format = 'complement';
-      r.reason = 'Ya tienes una mejora que funciona y todavía no sabemos qué queda por facilitar.';
+      r.gaps = [{ reason: 'Ya tienes una mejora que funciona y todavía no sabemos qué queda por facilitar.', q: 'Con la mejora que ya usas, ¿en qué momento sigue costándote?' }].concat(r.gaps || []);
+      r.reason = 'Es provisional: ya tienes una mejora que funciona y todavía no sabemos qué queda por facilitar.';
     }
     return r;
+  }
+
+  /* Primera prueba manual antes de decidir el formato */
+  function trialSteps(r, a, d, s) {
+    if (!r.test) return [];
+    var noun = ['P', 'D'].indexOf(s.situation) !== -1 ? 'pendientes' : 'ejemplos de esta tarea';
+    var fields = [];
+    (r.hyps || []).forEach(function (h) { if (h.id === 'experto' && r.hyps.length > 1) return; (h.fields || []).forEach(function (f) { if (fields.indexOf(f) === -1) fields.push(f); }); });
+    var steps = ['Reúne entre tres y cinco ' + noun + ' reales en una tabla o un documento.'];
+    steps.push(fields.length ? 'Añade solo estos campos: ' + fields.join(', ') + '.' : 'Añade solo los datos que realmente uses; no hace falta definir campos de antemano.');
+    var main = (r.hyps && r.hyps[0]) ? r.hyps[0].id : null;
+    if (main === 'decidir' || (r.hyps || []).some(function (h) { return h.id === 'decidir'; })) {
+      steps.push('Comprueba si con eso puedes elegir un siguiente paso.');
+      steps.push('Comprueba si puedes explicar por qué lo eliges.');
+    } else if (main) steps.push('Úsalo la próxima vez y comprueba esto: ' + lc(HYP[main].measure));
+    else steps.push('Úsalo la próxima vez que hagas la tarea.');
+    steps.push('Anota qué información sigue faltando.');
+    steps.push('Valora si mantenerlo al día te cuesta menos esfuerzo del que te ahorra.');
+    return steps;
   }
 
   function checks(r, a, s) {
@@ -1603,29 +1839,20 @@ window.DC = window.DC || {};
     return c.slice(0, 3);
   }
 
-  /* Pregunta pendiente: se elige por su utilidad para cambiar la propuesta
-     y nunca repite una pregunta ya respondida con «No lo sé». */
+  /* Pregunta pendiente: coincide con el motivo por el que la propuesta es
+     provisional y nunca repite una pregunta ya respondida con «No lo sé». */
   function pendingQuestion(r, a, d, s) {
     if (r.level === 'actual' || r.level === 'norelevante') return null;
+    if (r.gaps && r.gaps.length) return r.gaps[0].q;
+    if (r.test) return 'Si tuvieras que mantener esa tabla al día, ¿cuánto esfuerzo te compensaría dedicarle cada semana?';
     if (s.consState === 'sindescribir') return 'La última vez que ocurrió, ¿qué cambió para ti por no poder hacerlo como querías?';
-    if (s.taskVague) {
-      if (s.learn === 'nolose' || s.task === 'nolose') return 'Piensa en la última vez: ¿qué tenías delante y qué querías conseguir?';
-      return '¿Qué intentabas hacer exactamente la última vez que te ocurrió?';
-    }
+    if (s.taskVague) return (s.learn === 'nolose' || s.task === 'nolose') ? 'Piensa en la última vez: ¿qué tenías delante y qué querías conseguir?' : '¿Qué intentabas hacer exactamente la última vez que te ocurrió?';
     if (s.improved && s.remainingUnknown) return 'Con la mejora que ya usas, ¿en qué momento sigue costándote?';
     if (s.obstacle === 'energia' && s.energy === 'otra') return 'Si puedes, describe en una frase lo que te pasaba aquella vez.';
-    if (s.obstacleVague || s.obstacle === 'ninguno') return s.obstacle === 'nolose'
-      ? 'La última vez, ¿en qué momento concreto dejaste de avanzar?'
-      : 'La última vez que ocurrió, ¿en qué paso concreto te quedaste parado/a o perdiste más tiempo?';
-    if (s.relevant === null) return s.consState === 'noseguro' && has(a, s.K('q10b'), 'nolose')
-      ? 'La última vez que salió peor de lo que querías, ¿qué pasó después?'
-      : '¿Qué pasa cuando esta tarea sale mal o tarda más de la cuenta?';
+    if (s.obstacleVague || s.obstacle === 'ninguno') return s.obstacle === 'nolose' ? 'La última vez, ¿en qué momento concreto dejaste de avanzar?' : 'La última vez que ocurrió, ¿en qué paso concreto te quedaste parado/a o perdiste más tiempo?';
+    if (s.relevant === null) return has(a, s.K('q10b'), 'nolose') ? 'La última vez que salió peor de lo que querías, ¿qué pasó después?' : '¿Qué pasa cuando esta tarea sale mal o tarda más de la cuenta?';
     if (s.unresolved.length) return 'Tu forma actual de hacerlo, ¿te resuelve la tarea por completo o solo en parte?';
     if (s.keepAsIs && s.strong) return '¿Qué parte de la tarea provoca la consecuencia que señalaste?';
-    if (r.test && (s.accessRelevant || s.integration)) return s.videos
-      ? '¿Puedes usar esas grabaciones fuera de donde las ves ahora, por ejemplo guardarlas o pausarlas para tomar notas?'
-      : '¿Puedes usar esos materiales fuera del sitio donde están ahora, por ejemplo copiarlos o guardarlos?';
-    if (r.test && (r.format === 'web' || r.format === 'app')) return 'Si la ayuda te pidiera anotar algo cada vez que hagas la tarea, ¿te compensaría?';
     return null;
   }
 
@@ -1676,6 +1903,10 @@ window.DC = window.DC || {};
         f.task += s.learn === 'nolose' ? ' No sabes concretar más qué intentabas hacer.'
           : ' Concretamente: ' + (s.learn === 'otra' ? (lt ? quote(lt) : 'otra actividad, sin más detalle') : lc(DC.labelOf(K('q6b'), s.learn, a, d))) + '.';
       }
+      if (s.orderWhat) {
+        var ow = DC.text(a, K('q6o'), 'otra');
+        f.task += s.orderWhat === 'nolose' ? ' No sabes concretar qué intentas ordenar.' : ' Lo que intentas ordenar: ' + (s.orderWhat === 'otra' ? (ow ? quote(ow) : 'otra cosa, sin más detalle') : lc(DC.labelOf(K('q6o'), s.orderWhat, a, d))) + '.';
+      }
       f.task += ambTxt;
     }
     if (s.obstacle) {
@@ -1684,14 +1915,21 @@ window.DC = window.DC || {};
         : 'Indicaste que lo que más la dificultó fue: ' + lc(DC.labelOf(K('q7'), s.obstacle, a, d)) + '.';
       if (s.energy) f.obstacle += ' Lo que mejor lo describe: ' + lc(DC.labelOf(K('q7b'), s.energy, a, d)) + '.';
       if (s.energyBehavior) f.obstacle += ' La última vez: ' + lc(DC.labelOf(K('q7c'), s.energyBehavior, a, d)) + '.';
+      if (s.obstacle === 'dispersa' && s.disp) {
+        var dt = DC.text(a, K('q7d'), 'otra');
+        f.obstacle += s.disp === 'nolose' ? ' No sabes concretar qué ocurre con esa información.' : ' Lo que ocurre: ' + (s.disp === 'otra' ? (dt ? quote(dt) : 'otra cosa, sin más detalle') : lc(DC.labelOf(K('q7d'), s.disp, a, d))) + '.';
+      }
+      if (s.criteria.length) f.obstacle += ' Para elegir qué hacer primero necesitas saber: ' + s.criteria.map(function (x) { return lc(DC.labelOf(K('q7e'), x, a, d)); }).join('; ') + '.';
     }
     if (s.consState === 'sindescribir') f.consequence = 'Has indicado que esta situación tiene consecuencias relevantes, pero todavía no sabemos cuáles.';
     else if (s.consState === 'identificadas' && s.consClarified) f.consequence = 'Has aclarado que sí tiene consecuencias relevantes: ' + quote(s.consText) + '.';
     else if (s.consState === 'identificadas') {
-      f.consequence = 'Consecuencia: ' + val(a, K('q10b')).filter(function (x) { return RELEVANT.indexOf(x) !== -1; }).map(function (x) { return lc(DC.labelOf(K('q10b'), x, a, d)); }).join('; ') + '.';
+      f.consequence = 'Consecuencia: ' + val(a, K('q10b')).filter(function (x) { return RELEVANT.indexOf(x) !== -1 && !(s.collab && x === 'ayuda'); }).map(function (x) { return lc(DC.labelOf(K('q10b'), x, a, d)); }).join('; ') + '.';
       if (val(a, K('q10c'))) f.consequence += ' Tiempo en los pasos difíciles: ' + lc(DC.labelOf(K('q10c'), val(a, K('q10c')), a, d)) + '.';
     } else if (s.consState === 'noseguro') f.consequence = 'No está claro todavía si esta situación tiene consecuencias relevantes para ti.';
     else if (s.consState === 'ninguna') f.consequence = 'Has indicado que no tiene consecuencias relevantes.';
+    if (val(a, K('q10d'))) f.consequence = (f.consequence ? f.consequence + ' ' : '') + (s.collab ? 'Necesitar ayuda no te supone una dificultad: es colaboración normal.'
+      : 'Sobre la ayuda que necesitas: ' + val(a, K('q10d')).map(function (x) { return lc(DC.labelOf(K('q10d'), x, a, d)); }).join('; ') + '.');
     if (val(a, K('q8'))) {
       if (s.notTried) f.method = 'Indicaste que todavía no has intentado hacer esa tarea.';
       else {
@@ -1727,6 +1965,9 @@ window.DC = window.DC || {};
     else if (['esfuerzo', 'parte', 'noterminar', 'depende'].indexOf(val(a, s.K('q9'))) !== -1 && !s.improved) out.push('Tu forma actual cumple solo en parte o con más esfuerzo del que quisieras.');
     if (s.notTried) out.push('No tenemos información sobre un método actual.');
     else if (val(a, s.K('q9b')) === 'no') out.push('No has indicado haber probado una mejora.');
+    if (s.obstacle === 'dispersa' && val(a, 'q2A') === 'nunca') out.push('Que no busques información en varios sitios no contradice que esté dispersa: puede que sepas dónde está y necesites verla reunida.');
+    if (s.collab) out.push('Recibir ayuda es, en tu caso, colaboración normal; no lo tratamos como una dificultad.');
+    if (has(a, s.K('q10d'), 'criterio')) out.push('Necesitas el criterio o los conocimientos de otra persona: una lista de tareas no sustituiría esa ayuda.');
     if (s.consClarified) out.push('Tu aclaración posterior sobre las consecuencias sustituye a tu respuesta inicial en esta interpretación; la inicial se conserva en tus respuestas.');
     if (d.uncertain && s.n === 1) out.push('No estabas seguro/a de que esta situación te causara una dificultad, así que la interpretación es más tentativa.');
     if (s.r.source === 'freq') out.push('Exploramos esta situación por ser la más frecuente, como criterio provisional; eso no significa que sea la más importante.');
@@ -1742,16 +1983,37 @@ window.DC = window.DC || {};
     var evidence = ['situation', 'task', 'obstacle', 'consequence', 'method', 'materials'].filter(function (k) { return f[k]; }).map(function (k) { return f[k]; });
     evidence = evidence.slice(0, commentEvidence ? 4 : 5);
     if (commentEvidence) evidence.push(commentEvidence);
+    var taskTxt = '';
+    if (s.task) {
+      taskTxt = (s.situation === 'G' ? 'Lo que más cuesta: ' : 'Tarea: ') + (s.task === 'otra' ? (DC.text(a, s.K('q6'), 'otra') ? quote(DC.text(a, s.K('q6'), 'otra')) : 'otra tarea, sin concretar') : lc(DC.labelOf(s.K('q6'), s.task, a, d)));
+      var sub = s.learn ? { k: 'q6b', v: s.learn } : s.orderWhat ? { k: 'q6o', v: s.orderWhat } : null;
+      if (sub) taskTxt += (sub.v === 'nolose' || (sub.v === 'otra' && !DC.text(a, s.K(sub.k), 'otra'))) ? ' (sin concretar)' : ' (' + (sub.v === 'otra' ? quote(DC.text(a, s.K(sub.k), 'otra')) : lc(DC.labelOf(s.K(sub.k), sub.v, a, d))) + ')';
+      else if (s.situation === 'P' && s.task === 'ambitos') taskTxt += ' (sin concretar qué)';
+      taskTxt += '.';
+    }
     var summary = [
-      'Situación: ' + lc(DC.SITUATIONS[s.situation].short) + '.',
-      s.task ? (s.situation === 'G' ? 'Lo que más cuesta: ' : 'Tarea: ') + (s.task === 'otra' ? (DC.text(a, s.K('q6'), 'otra') ? quote(DC.text(a, s.K('q6'), 'otra')) : 'otra tarea, sin concretar') : lc(DC.labelOf(s.K('q6'), s.task, a, d))) +
-        (s.learn && s.learn !== 'nolose' && s.learn !== 'otra' ? ' (' + lc(DC.labelOf(s.K('q6b'), s.learn, a, d)) + ')' : s.learn ? ' (sin concretar)' : '') + '.' : '',
+      'Situación: ' + lc(DC.SITUATIONS[s.situation].short) + '.', taskTxt,
       val(a, s.K('q5')) && ['varios', 'otro'].indexOf(val(a, s.K('q5'))) === -1 ? 'Contexto: ' + lc(DC.labelOf(s.K('q5'), val(a, s.K('q5')), a, d)) + '.' : '',
-      s.obstacle ? 'Obstáculo: ' + (s.obstacle === 'otro' && DC.text(a, s.K('q7'), 'otro') ? quote(DC.text(a, s.K('q7'), 'otro')) : lc(DC.labelOf(s.K('q7'), s.obstacle, a, d))) + '.' : '',
+      s.obstacle ? 'Obstáculo: ' + (s.obstacle === 'otro' && DC.text(a, s.K('q7'), 'otro') ? quote(DC.text(a, s.K('q7'), 'otro')) : lc(DC.labelOf(s.K('q7'), s.obstacle, a, d))) + (s.obstacle === 'dispersa' && s.disp && !s.dispUnknown && s.disp !== 'otra' ? ' (' + lc(DC.labelOf(s.K('q7d'), s.disp, a, d)) + ')' : s.obstacle === 'dispersa' && s.dispUnknown ? ' (sin concretar qué significa)' : '') + '.' : '',
       val(a, s.K('q8')) ? (s.notTried ? 'Todavía no has intentado hacer esa tarea.' : 'Método actual: ' + val(a, s.K('q8')).map(function (x) { return lc(DC.labelOf(s.K('q8'), x, a, d)); }).join(', ') + (s.improved ? ', con una mejora que te ha servido' : '') + '.') : ''
     ].filter(Boolean).join(' ');
-    var test = r.test && r.entry ? r.entry.f.slice(0, 3).map(function (x) { return { text: x[0], why: whyText(x[1], a, d, s) }; }) : [];
+
+    var steps = trialSteps(r, a, d, s);
     var question = pendingQuestion(r, a, d, s);
+    var points = (r.gaps || []).slice(1).map(function (g) { return g.reason; });
+    pendingPoints(r, a, d, s, question).forEach(function (p) {
+      var dup = points.concat([r.reason || '']).some(function (x) {
+        return (/consecuencias/.test(x) && /consecuencias/.test(p)) || (/tarea/.test(x) && /intentabas/.test(p)) || (/acceder|dónde está/.test(x) && /acceder/.test(p)) || (/mejora/.test(x) && /mejora/.test(p));
+      });
+      if (!dup) points.push(p);
+    });
+    var measures = [];
+    if (r.test) {
+      (r.hyps && r.hyps.length ? r.hyps.map(function (h) { return h.measure; }) : [MEASURES[s.situation]]).forEach(function (m) { if (m && measures.indexOf(m) === -1) measures.push(m); });
+      measures = measures.slice(0, 2);
+      measures.push('Mantener la ayuda sin que requiera más esfuerzo del que evita.');
+    } else if (r.format === 'process' && r.level === 'plausible') measures.push('La próxima vez que hagas la tarea con ese cambio, compárala con la anterior.');
+    var trial = r.format === 'trial' || r.format === 'complement';
     return {
       n: n,
       situation: s.situation,
@@ -1760,16 +2022,21 @@ window.DC = window.DC || {};
       evidence: evidence,
       hypothesis: r.text,
       extraHypothesis: r.hyp,
-      format: FORMATS[r.format] || FORMATS.none,
-      formatNote: (r.level === 'ok' || r.level === 'plausible') && ['process', 'complement', 'keep'].indexOf(r.format) === -1 ? 'Formato orientativo: se confirmaría con la primera prueba.' : '',
+      hyps: (r.hyps || []).map(function (h) { return { label: h.label, idea: h.idea }; }),
+      candidates: r.candidates || null,
+      format: trial ? FORMATS.trial : (FORMATS[r.format] || FORMATS.none),
+      formatNote: trial && (r.level === 'ok' || r.level === 'plausible')
+        ? 'Orientación inicial: ' + lc(FORMATS[r.orient] || FORMATS.existing) + '. Después de la prueba se valoraría si conviene adaptar una herramienta existente, añadir una funcionalidad, crear una web o crear una aplicación.' : '',
       requirements: requirements(a, d, s),
       inferences: inferences(r, a, d, s),
       checks: checks(r, a, s),
-      firstTest: test,
-      firstTestNote: test.length ? '' : (r.level === 'ok' || r.level === 'plausible' || r.level === 'sindescribir' ? 'Antes de proponer una prueba conviene aclarar la pregunta pendiente.' : 'No proponemos una prueba con lo explorado.'),
+      trialSteps: steps,
+      firstTest: r.test ? (r.fns || []) : [],
+      firstTestNote: r.test ? '' : (r.level === 'ok' || r.level === 'plausible' || r.level === 'sindescribir' ? 'Antes de proponer una prueba conviene aclarar la pregunta pendiente.' : 'No proponemos una prueba con lo explorado.'),
       question: question,
-      pendingPoints: pendingPoints(r, a, d, s, question),
-      measure: (r.level === 'ok' || r.level === 'plausible') && r.test ? (r.format === 'process' ? 'La próxima vez que hagas la tarea con ese cambio, compárala con la anterior.' : MEASURES[s.situation]) : (r.format === 'process' && r.level === 'plausible' ? 'La próxima vez que hagas la tarea con ese cambio, compárala con la anterior.' : null),
+      pendingPoints: points,
+      measures: measures,
+      measure: measures.length ? measures.join(' ') : null,
       status: { level: r.level, label: STATUS[r.level], symbol: SYMBOL[r.level], reason: r.reason }
     };
   }
@@ -2164,12 +2431,28 @@ window.DC = window.DC || {};
     return h + '</section>';
   }
 
+  function fnHTML(f) {
+    return '<li><span class="fn-text">' + esc(f.text) + '</span><dl class="fn-just">' +
+      '<dt>Se basa en</dt><dd>' + esc(f.evidence) + '</dd>' +
+      '<dt>Pretende aliviar</dt><dd>' + esc(f.relieves) + '</dd>' +
+      '<dt>Falta comprobar</dt><dd>' + esc(f.check) + '</dd></dl></li>';
+  }
+
   function routeHTML(m) {
     var h = '';
+    var proposal = m.status.level === 'ok' || m.status.level === 'plausible';
     h += '<section><h2>Situación explorada</h2><p>' + esc(m.summary) + '</p></section>';
     h += '<section><h2>Evidencia</h2><span class="label-said">Has indicado</span>' + list(m.evidence) + '</section>';
-    h += '<section><h2>Posible ayuda</h2><span class="label-infer">' + ((m.status.level === 'ok' || m.status.level === 'plausible') ? 'Hipótesis' : 'Valoración') + '</span><div class="proposal"><p>' + esc(m.hypothesis) + '</p>' +
-      (m.extraHypothesis ? '<p class="muted">' + esc(m.extraHypothesis) + '</p>' : '') + '</div>';
+    h += '<section><h2>Posible ayuda</h2><span class="label-infer">' + (proposal ? 'Hipótesis' : 'Valoración') + '</span><div class="proposal"><p>' + esc(m.hypothesis) + '</p>' +
+      (m.extraHypothesis ? '<p class="muted">' + esc(m.extraHypothesis) + '</p>' : '');
+    if (m.candidates && m.candidates.length) {
+      h += '<ul class="hyps">' + m.candidates.map(function (c) { return '<li><strong>' + esc(c.label) + ':</strong> ' + esc(c.idea) + ' <span class="muted">Encajaría ' + esc(c.when) + '.</span></li>'; }).join('') + '</ul>';
+    }
+    if (m.hyps && m.hyps.length) {
+      h += (m.candidates ? '<p class="sub">Además, por lo que indicaste sobre la ayuda que necesitas:</p>' : '') +
+        '<ul class="hyps">' + m.hyps.map(function (c) { return '<li><strong>' + esc(c.label) + ':</strong> ' + esc(c.idea) + '</li>'; }).join('') + '</ul>';
+    }
+    h += '</div>';
     h += '<dl class="kv"><dt>Formato</dt><dd>' + esc(m.format) + '</dd></dl>';
     if (m.formatNote) h += '<p class="muted small">' + esc(m.formatNote) + '</p>';
     if (m.inferences.length) h += '<p class="sub">Esto sugiere:</p>' + list(m.inferences);
@@ -2177,13 +2460,14 @@ window.DC = window.DC || {};
     if (m.checks.length) h += '<p class="sub">Antes de construir nada, falta comprobar:</p>' + list(m.checks);
     h += '</section>';
     h += '<section><h2>Primera prueba</h2>';
-    if (m.firstTest.length) {
-      h += '<ol class="features">' + m.firstTest.map(function (f) { return '<li><span>' + esc(f.text) + '</span><span class="why">' + esc(f.why) + '</span></li>'; }).join('') + '</ol>';
+    if (m.trialSteps.length) {
+      h += '<p>Antes de construir una herramienta, una prueba con ejemplos reales:</p><ol class="steps">' + m.trialSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>';
+      if (m.firstTest.length) h += '<p class="sub">' + (m.firstTest.length === 1 ? 'Función que se probaría:' : 'Funciones que se probarían:') + '</p><ol class="features">' + m.firstTest.map(fnHTML).join('') + '</ol>';
     } else h += '<p>' + esc(m.firstTestNote) + '</p>';
     h += '</section>';
     h += '<section><h2>Pregunta pendiente más importante</h2>' + (m.question ? '<p class="ask">' + esc(m.question) + '</p>' : '<p>Ninguna esencial para esta situación.</p>') +
       (m.pendingPoints.length ? '<p class="sub">Otros puntos pendientes:</p>' + list(m.pendingPoints) : '') + '</section>';
-    h += '<section><h2>Cómo comprobar si ayuda</h2><p>' + esc(m.measure || 'No aplica mientras no haya una propuesta que probar.') + '</p></section>';
+    h += '<section><h2>Cómo comprobar si ayuda</h2>' + (m.measures.length ? list(m.measures) : '<p>No aplica mientras no haya una propuesta que probar.</p>') + '</section>';
     h += '<section><h2>Estado de la propuesta</h2>' + statusHTML(m.status) + '</section>';
     return h;
   }
@@ -2244,7 +2528,7 @@ window.DC = window.DC || {};
       'section{border-top:1px solid #d3d9d1;padding:16px 0}.muted,.disclaimer,.why{color:#56625d}.disclaimer{font-size:.88rem}.small{font-size:.9rem}.sub{font-weight:700;margin:12px 0 4px}' +
       '.label-said,.label-infer{display:inline-block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:4px;margin-bottom:6px}.label-said{background:#e2efe8;color:#1d5c47}.label-infer{border:1px dashed #56625d;color:#56625d}' +
       '.proposal{border:1.5px solid #1d5c47;border-radius:10px;padding:10px 16px;margin-bottom:10px}.kv,.triad{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px}.kv dd,.triad dd{margin:0}.kv dd{font-weight:700}.kv dt,.triad dt{color:#56625d}' +
-      '.features li{margin-bottom:8px}.why{display:block;font-size:.9rem}.status{border:1.5px solid #56625d;border-radius:10px;padding:10px 16px;display:flex;gap:12px}.status p{margin:0 0 4px}.sym{font-weight:700;text-transform:uppercase;font-size:.72rem;border:1.5px solid currentColor;border-radius:4px;padding:2px 8px;height:fit-content;white-space:nowrap}' +
+      '.fn-just{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;font-size:.9rem;margin:4px 0}.fn-just dt{color:#56625d}.fn-just dd{margin:0}.fn-text{font-weight:700}.features li{margin-bottom:8px}.why{display:block;font-size:.9rem}.status{border:1.5px solid #56625d;border-radius:10px;padding:10px 16px;display:flex;gap:12px}.status p{margin:0 0 4px}.sym{font-weight:700;text-transform:uppercase;font-size:.72rem;border:1.5px solid currentColor;border-radius:4px;padding:2px 8px;height:fit-content;white-space:nowrap}' +
       '.ask{border-left:3px solid #1d5c47;padding-left:12px;font-weight:700}.quote{font-style:italic;border-left:3px solid #d3d9d1;padding-left:12px}.answers{padding-left:1.1rem}.answers li{margin-bottom:8px}.answers .q{color:#56625d;font-size:.92rem}' +
       '.top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}.brand{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:700}' +
       'button{font:inherit;font-weight:700;padding:10px 18px;border-radius:8px;border:0;background:#1d5c47;color:#fff;cursor:pointer;margin:6px 0 10px}' +

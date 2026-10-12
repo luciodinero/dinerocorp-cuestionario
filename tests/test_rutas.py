@@ -100,6 +100,7 @@ def ruta_varias(q):
     q.answer('Trabajo por cuenta ajena')
     q.answer('Consultar acuerdos o el estado de una actividad')
     q.answer('La información estaba dispersa o era difícil de encontrar')
+    q.answer('Me cuesta encontrar lo que necesito')
     q.answer('Utilizo mensajes o correos', 'Utilizo notas, papel, documentos o una hoja de cálculo')
     check('q9: pareja «cómo funciona» + «has probado algo»', '¿Has probado algo' in q.text(), q.text()[:300])
     q.pick('Lo consigo, pero con más esfuerzo del que quisiera', 'No'); q.cont()
@@ -116,7 +117,7 @@ def ruta_varias(q):
     t = report_checks(q, 'Varias')
     for sec in ['Situación explorada', 'Evidencia', 'Posible ayuda', 'Primera prueba', 'Pregunta pendiente más importante', 'Cómo comprobar si ayuda', 'Estado de la propuesta']:
         check('Varias: sección «' + sec + '»', sec in t, '')
-    check('Varias: propuesta de coordinación', 'reúna los acuerdos' in t, t)
+    check('Varias: hipótesis de recuperar información', 'Recuperar información' in t, t)
     check('Varias: otras situaciones pendientes', 'Otras situaciones pendientes' in t and SHORT['A'] in t, '')
     check('Varias: evidencia entre 3 y 5', 3 <= q.p.locator('section:has(h2:text("Evidencia")) li').count() <= 5, q.p.locator('section:has(h2:text("Evidencia")) li').count())
     check('Varias: «No has indicado haber probado una mejora»', 'No has indicado haber probado una mejora' in t, '')
@@ -154,6 +155,7 @@ def ruta_aprendizaje(q):
     check('Aprendizaje: pregunta «¿Qué parte te cuesta más?»', q.title() == '¿Qué parte te cuesta más?', q.title())
     q.answer('Encontrar otra vez una parte concreta')
     q.answer('La información estaba dispersa o era difícil de encontrar')
+    q.answer('Me cuesta encontrar lo que necesito')
     q.answer('Utilizo notas, papel, documentos o una hoja de cálculo')
     q.pick('Solo resuelve una parte', 'Sí, pero solo parcialmente'); q.cont()
     q.answer('Me cansa o me frustra')
@@ -163,7 +165,7 @@ def ruta_aprendizaje(q):
     q.answer('Funcionar desde el ordenador')
     q.answer('Sí'); q.cont()
     t = report_checks(q, 'Aprendizaje')
-    check('Aprendizaje: propuesta de índice propio', 'índice propio' in t, t)
+    check('Aprendizaje: hipótesis de recuperar información', 'Recuperar información' in t, t)
     check('Aprendizaje: no presupone acceso al vídeo', 'No damos por hecho que se pueda acceder al vídeo' in t, t)
     check('Aprendizaje: pregunta pendiente sobre acceso a grabaciones', 'grabaciones' in q.p.inner_text('.ask'), q.p.inner_text('.ask'))
 
@@ -216,7 +218,7 @@ def ruta_estudiante(q, explorar):
     check(tag + ': trata la idea como pista', 'pista' in t, '')
     check(tag + ': no presupone acceso a vídeo/audio/transcripción', 'transcripción' in t, '')
     check(tag + ': no promete exactitud ni ahorro', 'no damos por hecho' in t.lower() and 'exacto' in t, '')
-    check(tag + ': mantiene incertidumbre sobre priorización', 'criterios sencillos de prioridad' in t and 'Falta confirmarlo' in t, '')
+    check(tag + ': mantiene incertidumbre sobre priorización', 'elegir entre varias tareas' in t and 'Falta confirmarlo' in t, '')
     check(tag + ': usa «No tenemos información suficiente» (no descarte global)', 'No tenemos información suficiente para proponer una ayuda tecnológica para esta dificultad' in t, '')
     check(tag + ': exportación coherente', 'clases grabadas' in html and 'La solución que imaginas' in html, '')
     if explorar:
@@ -276,6 +278,7 @@ def ruta_metodo_ok(q):
     q.answer('Hogar o cuidados')
     q.answer('Recordar una fecha, una cita o una entrega')
     q.answer('La información estaba dispersa o era difícil de encontrar')
+    q.answer('Me cuesta encontrar lo que necesito')
     q.answer('Utilizo una aplicación o web')
     q.pick('Me funciona bien y requiere poco esfuerzo', 'Sí, y me ha servido'); q.cont()
     q.pick('Cambiar el momento o las condiciones', 'No, ahora me funciona suficientemente bien'); q.cont()
@@ -407,6 +410,7 @@ def ruta_cambios(q):
     q.answer('Trabajo por cuenta ajena')
     q.answer('Encontrar un archivo, una nota o un mensaje')
     q.answer('La información estaba dispersa o era difícil de encontrar')
+    q.answer('Me cuesta encontrar lo que necesito')
     q.pick('Utilizo notas, papel, documentos o una hoja de cálculo')
     q.pick('La hago sin un método concreto')
     check('Incompatibles: «sin método» desmarca «notas»', not q.inp('Utilizo notas, papel, documentos o una hoja de cálculo').is_checked(), '')
@@ -544,6 +548,124 @@ def limpieza_aclaraciones(q):
     check('Limpieza: quitar accesibilidad elimina su seguimiento', 'qacc' not in keys and '1.qc' in keys, keys)
 
 
+NEG = {'q1': ['ajena', 'propio', 'hobbies', 'descanso']}
+
+
+def negocio(q, variante):
+    """Caso del negocio propio. variante: 'reunir' | 'colabora' | 'nolose' | 'otrapersona'"""
+    tag = 'Negocio (' + variante + ')'
+    q.start()
+    q.answer('Trabajo por cuenta ajena', 'Negocio propio o trabajo autónomo', 'Hobbies o proyectos personales', 'Descanso y ocio')
+    q.freq(P='En 3–5 días')
+    q.answer(SHORT['P'])
+    q.answer('Negocio propio o trabajo autónomo')
+    check(tag + ': opción vaga sustituida', 'Ordenar cosas de ámbitos distintos' not in q.text() and 'Ordenar varias cosas pendientes' in q.text(), '')
+    q.answer('Ordenar varias cosas pendientes')
+    check(tag + ': pregunta qué intenta ordenar', 'intentando ordenar' in q.title(), q.title())
+    q.answer('Responsabilidades de trabajo y personales')
+    q.answer('La información estaba dispersa o era difícil de encontrar')
+    check(tag + ': aclara qué significa la dispersión, con ejemplos', 'qué ocurre' in q.title() and 'Son solo ejemplos' in q.text(), q.title())
+    disp = {'reunir': 'Sé dónde está, pero tengo que reunirla para decidir', 'colabora': 'Sé dónde está, pero tengo que reunirla para decidir',
+            'nolose': 'No lo sé', 'otrapersona': 'Necesito información que tiene otra persona'}[variante]
+    q.answer(disp)
+    if disp.startswith('Sé dónde'):
+        check(tag + ': pregunta qué necesita saber para elegir', 'elegir qué hacer primero' in q.title(), q.title())
+        q.pick('Cuándo debe estar terminado', 'Si otra persona está esperando'); q.cont()
+    q.answer('Pido ayuda a alguien', 'La hago sin un método concreto')
+    q.pick('Solo resuelve una parte', 'No'); q.cont()
+    q.answer('Necesito ayuda de alguien', 'Dejo sin hacer algo que me importa')
+    check(tag + ': distingue colaboración de dependencia', 'necesitar esa ayuda' in q.title() and 'no es un problema por sí mismo' in q.text(), q.title())
+    if variante == 'colabora':
+        q.pick('Tengo que esperar para avanzar'); q.pick('No me causa una dificultad; simplemente colaboramos')
+        check(tag + ': «colaboramos» es excluyente', not q.inp('Tengo que esperar para avanzar').is_checked(), '')
+        q.cont()
+    elif variante == 'otrapersona':
+        q.answer('Tengo que esperar para avanzar')
+    else:
+        q.answer('Necesito su criterio o conocimientos para decidir')
+    q.answer('No lo sé')
+    q.answer('Funcionar desde el ordenador', 'Ser gratuita o de coste bajo')
+    q.answer('Sí'); q.cont()
+    t = report_checks(q, tag)
+    check(tag + ': no declara contradicción por «nunca busca en varios sitios»', 'contradictorias' not in t and 'no contradice que esté dispersa' in t, '')
+    check(tag + ': no recomienda un gestor de tareas', 'gestor de tareas' not in t.lower(), '')
+    check(tag + ': formato no definitivo', 'Se decidirá después de una primera prueba' in t and 'Formato\nUna web sencilla' not in t, '')
+    for li in q.p.locator('.features > li').all_inner_texts():
+        if 'priorid' in li.lower() or 'elegir' in li.lower():
+            check(tag + ': la función de decidir no se justifica por la dispersión', 'dispersión' not in li, li)
+    status = q.p.inner_text('.status .st-reason').lower()
+    ask = q.p.inner_text('.ask') if q.p.locator('.ask').count() else ''
+    if variante == 'reunir':
+        check(tag + ': hipótesis reunir + decidir + criterio experto', all(x in t for x in ['Reunir información', 'Decidir entre pendientes', 'Necesitar el criterio de otra persona']), t[:2000])
+        check(tag + ': decidir usa solo los datos indicados', 'cuándo debe estar terminado; si otra persona está esperando' in t.lower(), '')
+        check(tag + ': cada función con base, alivio y comprobación', q.p.locator('.fn-just').count() >= 1 and q.p.locator('.fn-just').count() == q.p.locator('.features > li').count(), '')
+        check(tag + ': no promete sustituir conocimientos', 'No sustituye su criterio' in t, '')
+        check(tag + ': prueba manual con 3–5 pendientes reales', 'entre tres y cinco pendientes reales' in t and 'explicar por qué' in t, '')
+        check(tag + ': estado provisional coherente con la pregunta (fuentes)', 'dónde está la información' in status and 'Dónde está ahora esa información' in ask, (status, ask))
+        check(tag + ': comprobación observable', 'Identificar un siguiente paso y explicar por qué' in t and 'más esfuerzo del que evita' in t, '')
+    if variante == 'colabora':
+        check(tag + ': colaboración no es dificultad', 'colaboración normal' in t, '')
+        check(tag + ': conserva la otra consecuencia', 'dejo sin hacer algo que me importa' in t.lower(), '')
+        check(tag + ': sin hipótesis de espera por la ayuda', 'Esperar información o acciones' not in t, '')
+    if variante == 'nolose':
+        check(tag + ': distingue hipótesis posibles sin elegir', all(x in t for x in ['Reunir información', 'Decidir entre pendientes', 'Encajaría']), t[:2500])
+        check(tag + ': sin funciones mientras se desconoce el significado', q.p.locator('.features > li').count() == 0, '')
+        check(tag + ': no repite la pregunta respondida con «No lo sé»', 'Cuando dices que la información está dispersa' not in ask and 'qué información te faltaba' in ask, ask)
+        check(tag + ': estado coherente con la pregunta', 'qué significa' in status, status)
+    if variante == 'otrapersona':
+        check(tag + ': hipótesis de esperar', 'Esperar información o acciones' in t and 'de quién depende' in t, '')
+        check(tag + ': pregunta qué necesita de la otra persona', 'necesitas exactamente de esa persona' in ask, ask)
+        check(tag + ': estado coherente', 'de la otra persona' in status, status)
+
+
+def negocio_antiguo(q):
+    """Respuestas de la versión anterior (sin los seguimientos nuevos): el informe no las inventa."""
+    q.p.goto(URL)
+    old = {'q1': ['ajena', 'propio', 'hobbies', 'descanso'], 'q2A': 'nunca', 'q2B': 'nunca', 'q2C': 'nunca', 'q2D': 'nunca', 'q2P': 'd35',
+           'q2E': 'nunca', 'q2F': 'nunca', 'q2G': 'nunca', 'q3': ['P'], '1.q5': 'propio', '1.q6': 'ambitos', '1.q7': 'dispersa',
+           '1.q8': ['ayuda', 'sinmetodo'], '1.q9': 'parte', '1.q9b': 'no', '1.q10b': ['ayuda', 'impide'], '1.q11': ['nolose'],
+           'q12': ['ordenador', 'gratis'], 'qconfirm': 'si'}
+    html = q.p.evaluate("""(old) => { const a = DC_APP.state().answers; Object.keys(old).forEach(k => DC.commit(a, k, old[k], {})); return DC_APP.exportHTML(); }""", old)
+    rep = q.p.evaluate("() => DC.buildReport(DC_APP.state().answers)")
+    m = rep['main']
+    tag = 'Negocio (respuestas antiguas)'
+    check(tag + ': propuesta provisional', m['status']['level'] == 'plausible', m['status'])
+    check(tag + ': motivo y pregunta sobre la dispersión, coherentes', 'dispersa' in m['status']['reason'] and 'información está dispersa' in (m['question'] or ''), (m['status']['reason'], m['question']))
+    check(tag + ': hipótesis reunir, decidir y esperar sin elegir', [c['label'] for c in (m['candidates'] or [])] == ['Reunir información', 'Decidir entre pendientes', 'Esperar información o acciones'], m['candidates'])
+    check(tag + ': sin funciones inventadas', not m['firstTest'], m['firstTest'])
+    check(tag + ': pendientes: qué ordena y la ayuda', any('ordenar' in x for x in m['pendingPoints']) and any('ayuda' in x for x in m['pendingPoints']), m['pendingPoints'])
+    check(tag + ': formato no definitivo', m['format'] == 'Se decidirá después de una primera prueba', m['format'])
+    check(tag + ': no declara contradicción', 'contradictorias' not in html, '')
+    check(tag + ': sin gestor de tareas ni criterios impuestos', 'gestor de tareas' not in html.lower() and 'criterios sencillos' not in html, '')
+
+
+def limpieza_negocio(q):
+    negocio(q, 'reunir')
+    q.p.click('[data-act=review]')
+    q.p.click('[data-goto="1.q7"]')
+    q.answer('Había demasiados pasos manuales o repetidos')
+    keys = q.keys()
+    check('Limpieza: cambiar el obstáculo quita sus seguimientos', '1.q7d' not in keys and '1.q7e' not in keys and '1.q6o' in keys and '1.q10d' in keys, keys)
+    q.p.goto(URL)
+    q.start()
+    q.answer('Negocio propio o trabajo autónomo')
+    q.freq(P='En 3–5 días')
+    q.answer(SHORT['P']); q.answer('Negocio propio o trabajo autónomo'); q.answer('Ordenar varias cosas pendientes'); q.answer('Otra cosa')
+    q.answer('La información estaba dispersa o era difícil de encontrar'); q.answer('Sé dónde está, pero tengo que reunirla para decidir')
+    q.pick('Cuándo debe estar terminado'); q.pick('No lo sé')
+    check('Exclusiva: «No lo sé» en criterios', not q.inp('Cuándo debe estar terminado').is_checked(), '')
+    q.cont()
+    q.answer('Pido ayuda a alguien'); q.pick('Solo resuelve una parte', 'No'); q.cont()
+    q.answer('Necesito ayuda de alguien')
+    q.pick('Tengo que esperar para avanzar'); q.pick('No lo sé')
+    check('Exclusiva: «No lo sé» en ayuda', not q.inp('Tengo que esperar para avanzar').is_checked(), '')
+    q.cont()
+    q.back(); q.back()
+    q.pick('Me cansa o me frustra'); q.inp('Necesito ayuda de alguien').uncheck(); q.cont()
+    keys = q.keys()
+    check('Limpieza: quitar «necesito ayuda» elimina su seguimiento', '1.q10d' not in keys and '1.q7e' in keys, keys)
+
+
 def layout(browser):
     p = browser.new_page(viewport={'width': 1280, 'height': 900})
     q = Q(p); q.start(); q.answer('Estudios o formación')
@@ -613,11 +735,14 @@ def main():
                   ruta_energia_grande, ruta_energia_sin, ruta_metodo_ok, ruta_sin_necesidad,
                   ruta_sin_necesidad_comentario, ruta_otra_vacia, ruta_cambio_situacion, ruta_cambios,
                   lambda q: universitaria(q, True), lambda q: universitaria(q, False), lambda q: universitaria(q, False, True),
-                  mejora_suficiente, limpieza_aclaraciones]
+                  mejora_suficiente, limpieza_aclaraciones,
+                  lambda q: negocio(q, 'reunir'), lambda q: negocio(q, 'colabora'), lambda q: negocio(q, 'nolose'), lambda q: negocio(q, 'otrapersona'),
+                  negocio_antiguo, limpieza_negocio]
     names = ['varias', 'consecuencias', 'empate', 'aprendizaje', 'estudiante-pendiente', 'estudiante-explora',
              'energía-grande', 'energía-sin', 'método-ok', 'sin-necesidad', 'sin-necesidad-comentario', 'otra-vacía',
              'cambio-situación', 'cambios', 'universitaria-completa', 'universitaria-pendiente', 'universitaria-describe',
-             'mejora-suficiente', 'limpieza-aclaraciones']
+             'mejora-suficiente', 'limpieza-aclaraciones', 'negocio-reunir', 'negocio-colabora', 'negocio-nolose', 'negocio-otrapersona',
+             'negocio-antiguo', 'limpieza-negocio']
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         for name, fn in zip(names, page_tests):

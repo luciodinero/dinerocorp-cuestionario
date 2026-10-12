@@ -327,12 +327,28 @@
     return h + '</section>';
   }
 
+  function fnHTML(f) {
+    return '<li><span class="fn-text">' + esc(f.text) + '</span><dl class="fn-just">' +
+      '<dt>Se basa en</dt><dd>' + esc(f.evidence) + '</dd>' +
+      '<dt>Pretende aliviar</dt><dd>' + esc(f.relieves) + '</dd>' +
+      '<dt>Falta comprobar</dt><dd>' + esc(f.check) + '</dd></dl></li>';
+  }
+
   function routeHTML(m) {
     var h = '';
+    var proposal = m.status.level === 'ok' || m.status.level === 'plausible';
     h += '<section><h2>Situación explorada</h2><p>' + esc(m.summary) + '</p></section>';
     h += '<section><h2>Evidencia</h2><span class="label-said">Has indicado</span>' + list(m.evidence) + '</section>';
-    h += '<section><h2>Posible ayuda</h2><span class="label-infer">' + ((m.status.level === 'ok' || m.status.level === 'plausible') ? 'Hipótesis' : 'Valoración') + '</span><div class="proposal"><p>' + esc(m.hypothesis) + '</p>' +
-      (m.extraHypothesis ? '<p class="muted">' + esc(m.extraHypothesis) + '</p>' : '') + '</div>';
+    h += '<section><h2>Posible ayuda</h2><span class="label-infer">' + (proposal ? 'Hipótesis' : 'Valoración') + '</span><div class="proposal"><p>' + esc(m.hypothesis) + '</p>' +
+      (m.extraHypothesis ? '<p class="muted">' + esc(m.extraHypothesis) + '</p>' : '');
+    if (m.candidates && m.candidates.length) {
+      h += '<ul class="hyps">' + m.candidates.map(function (c) { return '<li><strong>' + esc(c.label) + ':</strong> ' + esc(c.idea) + ' <span class="muted">Encajaría ' + esc(c.when) + '.</span></li>'; }).join('') + '</ul>';
+    }
+    if (m.hyps && m.hyps.length) {
+      h += (m.candidates ? '<p class="sub">Además, por lo que indicaste sobre la ayuda que necesitas:</p>' : '') +
+        '<ul class="hyps">' + m.hyps.map(function (c) { return '<li><strong>' + esc(c.label) + ':</strong> ' + esc(c.idea) + '</li>'; }).join('') + '</ul>';
+    }
+    h += '</div>';
     h += '<dl class="kv"><dt>Formato</dt><dd>' + esc(m.format) + '</dd></dl>';
     if (m.formatNote) h += '<p class="muted small">' + esc(m.formatNote) + '</p>';
     if (m.inferences.length) h += '<p class="sub">Esto sugiere:</p>' + list(m.inferences);
@@ -340,13 +356,14 @@
     if (m.checks.length) h += '<p class="sub">Antes de construir nada, falta comprobar:</p>' + list(m.checks);
     h += '</section>';
     h += '<section><h2>Primera prueba</h2>';
-    if (m.firstTest.length) {
-      h += '<ol class="features">' + m.firstTest.map(function (f) { return '<li><span>' + esc(f.text) + '</span><span class="why">' + esc(f.why) + '</span></li>'; }).join('') + '</ol>';
+    if (m.trialSteps.length) {
+      h += '<p>Antes de construir una herramienta, una prueba con ejemplos reales:</p><ol class="steps">' + m.trialSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>';
+      if (m.firstTest.length) h += '<p class="sub">' + (m.firstTest.length === 1 ? 'Función que se probaría:' : 'Funciones que se probarían:') + '</p><ol class="features">' + m.firstTest.map(fnHTML).join('') + '</ol>';
     } else h += '<p>' + esc(m.firstTestNote) + '</p>';
     h += '</section>';
     h += '<section><h2>Pregunta pendiente más importante</h2>' + (m.question ? '<p class="ask">' + esc(m.question) + '</p>' : '<p>Ninguna esencial para esta situación.</p>') +
       (m.pendingPoints.length ? '<p class="sub">Otros puntos pendientes:</p>' + list(m.pendingPoints) : '') + '</section>';
-    h += '<section><h2>Cómo comprobar si ayuda</h2><p>' + esc(m.measure || 'No aplica mientras no haya una propuesta que probar.') + '</p></section>';
+    h += '<section><h2>Cómo comprobar si ayuda</h2>' + (m.measures.length ? list(m.measures) : '<p>No aplica mientras no haya una propuesta que probar.</p>') + '</section>';
     h += '<section><h2>Estado de la propuesta</h2>' + statusHTML(m.status) + '</section>';
     return h;
   }
@@ -407,7 +424,7 @@
       'section{border-top:1px solid #d3d9d1;padding:16px 0}.muted,.disclaimer,.why{color:#56625d}.disclaimer{font-size:.88rem}.small{font-size:.9rem}.sub{font-weight:700;margin:12px 0 4px}' +
       '.label-said,.label-infer{display:inline-block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:4px;margin-bottom:6px}.label-said{background:#e2efe8;color:#1d5c47}.label-infer{border:1px dashed #56625d;color:#56625d}' +
       '.proposal{border:1.5px solid #1d5c47;border-radius:10px;padding:10px 16px;margin-bottom:10px}.kv,.triad{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px}.kv dd,.triad dd{margin:0}.kv dd{font-weight:700}.kv dt,.triad dt{color:#56625d}' +
-      '.features li{margin-bottom:8px}.why{display:block;font-size:.9rem}.status{border:1.5px solid #56625d;border-radius:10px;padding:10px 16px;display:flex;gap:12px}.status p{margin:0 0 4px}.sym{font-weight:700;text-transform:uppercase;font-size:.72rem;border:1.5px solid currentColor;border-radius:4px;padding:2px 8px;height:fit-content;white-space:nowrap}' +
+      '.fn-just{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;font-size:.9rem;margin:4px 0}.fn-just dt{color:#56625d}.fn-just dd{margin:0}.fn-text{font-weight:700}.features li{margin-bottom:8px}.why{display:block;font-size:.9rem}.status{border:1.5px solid #56625d;border-radius:10px;padding:10px 16px;display:flex;gap:12px}.status p{margin:0 0 4px}.sym{font-weight:700;text-transform:uppercase;font-size:.72rem;border:1.5px solid currentColor;border-radius:4px;padding:2px 8px;height:fit-content;white-space:nowrap}' +
       '.ask{border-left:3px solid #1d5c47;padding-left:12px;font-weight:700}.quote{font-style:italic;border-left:3px solid #d3d9d1;padding-left:12px}.answers{padding-left:1.1rem}.answers li{margin-bottom:8px}.answers .q{color:#56625d;font-size:.92rem}' +
       '.top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}.brand{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:700}' +
       'button{font:inherit;font-weight:700;padding:10px 18px;border-radius:8px;border:0;background:#1d5c47;color:#fff;cursor:pointer;margin:6px 0 10px}' +

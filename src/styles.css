@@ -189,6 +189,14 @@ header.top { max-width: 44rem; }
 .prev .status { margin-top: 8px; }
 @media (max-width: 560px) { .triad, .kv { grid-template-columns: minmax(0, 1fr); } .triad dd, .kv dd { margin-bottom: 6px; } }
 @media print { .qhelp { display: none; } }
+.hyps { margin: 10px 0 0; }
+.steps { padding-left: 1.3rem; display: grid; gap: 4px; }
+.features li { grid-template-columns: 2rem minmax(0, 1fr); }
+.fn-text { font-weight: 700; }
+.fn-just { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 12px; margin: 4px 0 6px; font-size: .9rem; }
+.fn-just dt { color: var(--muted); }
+.fn-just dd { margin: 0; }
+@media (max-width: 560px) { .fn-just { grid-template-columns: minmax(0, 1fr); } .fn-just dd { margin-bottom: 4px; } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 

@@ -136,8 +136,13 @@ DC.path = function (a, d) {
     var r = DC.routeObj(d, n), K = function (b) { return DC.K(n, b); };
     add(K('q5')); add(K('q6'));
     if (DC.needsLearnDetail(a, n, r)) add(K('q6b'));
+    if (r.situation === 'P' && DC.RV(a, n, 'q6') === 'ambitos') add(K('q6o'));
     add(K('q7'));
     if (DC.RV(a, n, 'q7') === 'energia') add(K('q7b'));
+    if (DC.RV(a, n, 'q7') === 'dispersa') {
+      add(K('q7d'));
+      if (DC.RV(a, n, 'q7d') === 'reunir') add(K('q7e'));
+    }
     add(K('q8'));
     if (!DC.has(a, K('q8'), 'nointentado')) add(K('q9'), [K('q9'), K('q9b')]);
     if (DC.RV(a, n, 'q9b') === 'sirve') {
@@ -147,6 +152,7 @@ DC.path = function (a, d) {
     if (DC.scaleRank(DC.val(a, 'q2' + r.situation)) === 0) add(K('q10a'));
     add(K('q10b'));
     if (DC.has(a, K('q10b'), 'tiempo')) add(K('q10c'));
+    if (DC.has(a, K('q10b'), 'ayuda')) add(K('q10d'));
     add(K('q11'));
     if (DC.needsAccess(a, n, r)) add(K('q11c'));
   }

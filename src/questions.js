@@ -147,7 +147,7 @@ DC.TASKS = {
   ],
   P: [
     { id: 'varias', label: 'Elegir entre varias tareas o gestiones pendientes' },
-    { id: 'ambitos', label: 'Ordenar cosas de ámbitos distintos' },
+    { id: 'ambitos', label: 'Ordenar varias cosas pendientes' },
     { id: 'grande', label: 'Empezar algo grande o con muchas partes' },
     { id: 'retomar', label: 'Retomar algo que había dejado a medias' },
     otra()
@@ -513,6 +513,65 @@ DC.QUESTIONS = {
       { id: 'noespecificar', label: 'Prefiero no especificarlo', exclusive: true }
     ],
     extraText: { key: 'detalle', max: 120, label: 'Si quieres, concreta una necesidad (opcional)', showIf: ['leer', 'escuchar', 'movimientos', 'entender', 'apoyo', 'otra'] }
+  },
+
+  q6o: {
+    route: true, type: 'single', section: 'La tarea concreta',
+    title: '¿Qué estás intentando ordenar principalmente?',
+    options: [
+      { id: 'proyectos', label: 'Tareas de distintos proyectos o actividades' },
+      { id: 'peticiones', label: 'Peticiones de diferentes personas' },
+      { id: 'compromisos', label: 'Compromisos con fechas' },
+      { id: 'trabajopersonal', label: 'Responsabilidades de trabajo y personales' },
+      { id: 'opciones', label: 'Opciones entre las que tengo que decidir' },
+      { id: 'otra', label: 'Otra cosa', textField: { max: 120, label: 'Descríbelo en pocas palabras (opcional)' } },
+      { id: 'nolose', label: 'No lo sé' }
+    ]
+  },
+
+  q7d: {
+    route: true, type: 'single', section: 'Qué lo dificultó',
+    title: 'Cuando dices que la información está dispersa, ¿qué ocurre?',
+    help: { explain: 'Puede estar en mensajes, documentos, papel, aplicaciones o en tu memoria. Son solo ejemplos.' },
+    options: [
+      { id: 'reunir', label: 'Sé dónde está, pero tengo que reunirla para decidir' },
+      { id: 'memoria', label: 'Algunas cosas están anotadas y otras las recuerdo' },
+      { id: 'otrapersona', label: 'Necesito información que tiene otra persona' },
+      { id: 'encontrar', label: 'Me cuesta encontrar lo que necesito' },
+      { id: 'otra', label: 'Me refería a otra cosa', textField: { max: 140, label: 'Descríbelo en pocas palabras (opcional)' } },
+      { id: 'nolose', label: 'No lo sé' }
+    ]
+  },
+
+  q7e: {
+    route: true, type: 'multi', max: 3, section: 'Qué lo dificultó',
+    title: '¿Qué necesitas saber para elegir qué hacer primero?',
+    help: { explain: 'Marca lo que miras o te gustaría tener a la vista. No hay criterios correctos.' },
+    options: [
+      { id: 'fecha', label: 'Cuándo debe estar terminado' },
+      { id: 'consecuencia', label: 'Qué ocurre si lo dejo para después' },
+      { id: 'esfuerzo', label: 'Cuánto tiempo o esfuerzo requiere' },
+      { id: 'esperando', label: 'Si otra persona está esperando' },
+      { id: 'recursos', label: 'Si tengo lo necesario para hacerlo' },
+      { id: 'importancia', label: 'Qué importancia tiene para mí' },
+      { id: 'otra', label: 'Otra cosa' },
+      { id: 'nolose', label: 'No lo sé', exclusive: true }
+    ]
+  },
+
+  q10d: {
+    route: true, type: 'multi', max: 2, section: 'Frecuencia e impacto',
+    title: '¿Qué parte de necesitar esa ayuda te dificulta la tarea?',
+    help: { explain: 'Recibir ayuda no es un problema por sí mismo. Si simplemente colaboráis, indícalo.' },
+    options: [
+      { id: 'esperar', label: 'Tengo que esperar para avanzar' },
+      { id: 'disponible', label: 'La persona no siempre está disponible' },
+      { id: 'recordar', label: 'Necesito que me recuerde cosas' },
+      { id: 'criterio', label: 'Necesito su criterio o conocimientos para decidir' },
+      { id: 'colabora', label: 'No me causa una dificultad; simplemente colaboramos', exclusive: true },
+      { id: 'otra', label: 'Otra' },
+      { id: 'nolose', label: 'No lo sé', exclusive: true }
+    ]
   },
 
   /* ---------- Preguntas comunes finales ---------- */

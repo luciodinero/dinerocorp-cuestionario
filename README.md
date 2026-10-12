@@ -64,6 +64,17 @@ Reglas principales (`decide()`):
 
 Las aclaraciones posteriores sustituyen a la respuesta inicial para la conclusión del informe. La respuesta inicial se conserva en «Revisar mis respuestas» y en la exportación («Respuesta inicial… Aclaración posterior…»). Estados de consecuencias: sin consecuencias relevantes, identificadas, relevantes sin describir, no está claro. Lo que se omite queda en «Otros puntos pendientes» del informe, y la pregunta pendiente nunca repite una pregunta ya respondida con «No lo sé».
 
+### Información dispersa, decidir, esperar y ayuda (versión 4)
+
+| Seguimiento | Disparador |
+|---|---|
+| ¿Qué estás intentando ordenar principalmente? | Tarea «Ordenar varias cosas pendientes» (sustituye a «Ordenar cosas de ámbitos distintos») |
+| Cuando dices que la información está dispersa, ¿qué ocurre? | Obstáculo «La información estaba dispersa…» |
+| ¿Qué necesitas saber para elegir qué hacer primero? | Dispersión = «Sé dónde está, pero tengo que reunirla para decidir» |
+| ¿Qué parte de necesitar esa ayuda te dificulta la tarea? | Consecuencia «Necesito ayuda de alguien» |
+
+El generador distingue seis hipótesis condicionadas (no recomendaciones automáticas): recuperar, reunir, capturar pendientes, decidir entre pendientes, esperar a otra persona y necesitar criterio experto. Si no se sabe qué significa «dispersa», muestra las interpretaciones posibles sin elegir y sin funciones. Cada función propuesta indica en qué respuesta se basa, qué pretende aliviar y qué falta comprobar. La propuesta empieza siempre por una prueba manual con 3–5 ejemplos reales; el formato (adaptar una herramienta, añadir una funcionalidad, web o aplicación) se decide después. La pregunta pendiente coincide con el motivo del estado provisional.
+
 ### Contradicciones detectadas (aclaración opcional)
 
 - Método «funciona bien» + suele posponerla o provoca errores, plazos perdidos o actividades sin hacer.
@@ -84,5 +95,5 @@ Estas pruebas comprueban que la lógica funciona; **no** sustituyen la prueba co
 ## Limitaciones conocidas
 
 - Dentro de la vista de artifact de claude.ai no se puede abrir el diálogo de impresión: la app lo explica y remite a descargar el informe, que incluye su propio botón de imprimir / guardar como PDF.
-- La duración de unos 10 minutos es un objetivo sin medir. Una ruta típica tiene 23–25 pantallas (8 de ellas de frecuencia, de un clic); una que active casi todos los seguimientos llega a unas 26.
+- La duración de unos 10 minutos es un objetivo sin medir. Una ruta típica tiene 23–25 pantallas (el caso de negocio propio con dispersión y ayuda, 24) (8 de ellas de frecuencia, de un clic); una que active casi todos los seguimientos llega a unas 26.
 - El catálogo de propuestas es limitado y conservador por diseño.
